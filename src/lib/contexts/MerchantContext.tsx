@@ -36,14 +36,19 @@ export interface Product {
   variantGroups?: VariantGroup[];
 }
 
-export type OrderStatus = "Mencari Kurir" | "Menuju Outlet" | "Pikap" | "Selesai";
+export type OrderStatus = "Menunggu Konfirmasi" | "Disiapkan" | "Siap Diambil" | "Selesai" | "Dibatalkan";
+export type OrderType = "Online Delivery" | "Online Pickup" | "POS Dine-In" | "POS Take-Away";
 
 export interface Order {
   id: string;
   customerName: string;
-  items: { name: string; qty: number }[];
+  items: { name: string; qty: number; options?: string[]; notes?: string }[];
   totalAmount: number;
+  notes?: string;
   status: OrderStatus;
+  orderType: OrderType;
+  paymentMethod?: "Tunai" | "QRIS Xendit" | "Online Payment";
+  driverInfo?: { name: string; licensePlate: string };
   createdAt: string;
 }
 
@@ -54,6 +59,7 @@ interface MerchantContextProps {
   deleteProduct: (id: string) => void;
   orders: Order[];
   addOrder: (order: Omit<Order, "id">) => void;
+  updateOrderStatus: (id: string, status: OrderStatus) => void;
 }
 
 const MerchantContext = createContext<MerchantContextProps | undefined>(undefined);
@@ -126,18 +132,79 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     {
       id: "ORD-001",
       customerName: "Budi Santoso",
-      items: [{ name: "Roti Cokelat", qty: 2 }],
-      totalAmount: 15000,
-      status: "Mencari Kurir",
+      items: [
+        { name: "Seblak Mewah", qty: 2, options: ["Level Pedas 5", "Kerupuk Extra"], notes: "Kuahnya dibanyakin ya mas" },
+        { name: "Es Teh Manis", qty: 2, options: ["Es Sedikit"] }
+      ],
+      totalAmount: 38000,
+      status: "Menunggu Konfirmasi",
+      orderType: "Online Delivery",
+      paymentMethod: "Online Payment",
+      notes: "Tolong cepat ya, saya lapar.",
       createdAt: new Date().toISOString(),
     },
     {
       id: "ORD-002",
+      customerName: "Ahmad Dani",
+      items: [
+        { name: "Nasi Goreng Spesial", qty: 1, options: ["Tidak Pedas", "Telur Dadar"] }
+      ],
+      totalAmount: 25000,
+      status: "Menunggu Konfirmasi",
+      orderType: "Online Pickup",
+      paymentMethod: "Online Payment",
+      createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
+    },
+    {
+      id: "ORD-003",
       customerName: "Siti Aminah",
-      items: [{ name: "Nasi Goreng Ayam", qty: 1 }],
-      totalAmount: 15000,
-      status: "Menuju Outlet",
+      items: [
+        { name: "Ayam Penyet", qty: 1, options: ["Sambal Ijo"] },
+        { name: "Es Jeruk", qty: 1 }
+      ],
+      totalAmount: 30000,
+      status: "Disiapkan",
+      orderType: "Online Delivery",
+      paymentMethod: "Online Payment",
+      driverInfo: { name: "Budi Driver", licensePlate: "N 4321 CX" },
       createdAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    },
+    {
+      id: "ORD-004",
+      customerName: "Walk-in Pelanggan",
+      items: [
+        { name: "Kopi Hitam", qty: 2 },
+        { name: "Roti Bakar", qty: 1, options: ["Coklat Keju"] }
+      ],
+      totalAmount: 45000,
+      status: "Selesai",
+      orderType: "POS Dine-In",
+      paymentMethod: "Tunai",
+      createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    },
+    {
+      id: "ORD-005",
+      customerName: "Joko Widodo",
+      items: [
+        { name: "Soto Ayam", qty: 3, options: ["Pisah Kuah"] }
+      ],
+      totalAmount: 45000,
+      status: "Siap Diambil",
+      orderType: "Online Pickup",
+      paymentMethod: "Online Payment",
+      createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    },
+    {
+      id: "ORD-006",
+      customerName: "Rina Nose",
+      items: [
+        { name: "Mie Goreng", qty: 1, notes: "Jangan pakai sayur sama sekali" }
+      ],
+      totalAmount: 18000,
+      status: "Dibatalkan",
+      orderType: "Online Delivery",
+      paymentMethod: "Online Payment",
+      createdAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
     },
   ]);
 
@@ -167,8 +234,12 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     setOrders((prev) => [newOrder, ...prev]);
   };
 
+  const updateOrderStatus = (id: string, status: OrderStatus) => {
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
+  };
+
   return (
-    <MerchantContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, orders, addOrder }}>
+    <MerchantContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, orders, addOrder, updateOrderStatus }}>
       {children}
     </MerchantContext.Provider>
   );

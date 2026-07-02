@@ -162,13 +162,15 @@ export default function POSPage() {
     
     // Add to orders context
     addOrder({
-      customerName: `Walk-in (${orderType})`,
+      customerName: `Walk-in Pelanggan`,
       items: cartItems.map(item => ({
         name: item.product.name,
         qty: item.quantity
       })),
       totalAmount: grandTotal,
       status: "Selesai",
+      orderType: orderType === "Dine-In" ? "POS Dine-In" : "POS Take-Away",
+      paymentMethod: paymentMethod === "QRIS" ? "QRIS Xendit" : "Tunai",
       createdAt: new Date().toISOString()
     });
 
