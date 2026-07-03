@@ -1,134 +1,263 @@
 "use client";
 
 import React, { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Gift, ExternalLink, Sparkles } from "lucide-react";
+import { Gift, Sparkles, Download, TreePine, Car, Smartphone, Target } from "lucide-react";
 import Link from "next/link";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function SustainabilityPage() {
   const [co2e, setCo2e] = useState(10600); // Mock value for Enterprise total
+  const [chartPeriod, setChartPeriod] = useState("6bulan");
+
+  const targetCo2e = 15000;
+  const progressPercent = Math.min(Math.round((co2e / targetCo2e) * 100), 100);
 
   // EPA Conversion factors
-  // 1 kg CO2e ≈ 0.016 pohon
-  // 1 kg CO2e ≈ 4.1 km mobil
-  // 1 kg CO2e ≈ 120 jam smartphone
   const trees = (co2e * 0.016).toFixed(0);
   const kmDriven = (co2e * 4.1).toLocaleString("id-ID");
   const phoneHours = (co2e * 120).toLocaleString("id-ID");
 
+  // Chart data logic based on period
+  const getChartData = () => {
+    switch(chartPeriod) {
+      case "tahun_ini":
+        return {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'],
+          data: [1200, 1900, 3000, 500, 2000, 1000, 1000, 1500, 2200, 1800, 2500, 2800]
+        };
+      case "semua":
+        return {
+          labels: ['2020', '2021', '2022', '2023', '2024'],
+          data: [8000, 15000, 19000, 25000, 21400]
+        };
+      case "6bulan":
+      default:
+        return {
+          labels: ['Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul'],
+          data: [1900, 3000, 500, 2000, 1000, 1000]
+        };
+    }
+  };
+
+  const currentChartData = getChartData();
+
+  const chartData = {
+    labels: currentChartData.labels,
+    datasets: [
+      {
+        label: 'Reduksi CO₂e (Kg)',
+        data: currentChartData.data,
+        backgroundColor: 'rgba(16, 185, 129, 0.9)', // emerald-500
+        borderRadius: 4,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: '#0f172a',
+        padding: 12,
+        titleFont: { size: 14 },
+        bodyFont: { size: 14 },
+      }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: '#f1f5f9',
+        },
+        border: { display: false }
+      },
+      x: {
+        grid: {
+          display: false,
+        },
+        border: { display: false }
+      }
+    }
+  };
+
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight text-slate-800">Laporan Keberlanjutan (SDG)</h2>
-          <p className="text-slate-500">
+          <p className="text-slate-500 mt-1">
             Memantau kontribusi perusahaan terhadap Tujuan Pembangunan Berkelanjutan (SDG 9 & 17).
           </p>
         </div>
       </div>
 
-      {/* Hero Wrapped Highlight (Optional but good for visibility) */}
-      <div className="relative overflow-hidden bg-slate-900 rounded-2xl p-1 shadow-xl group">
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 via-transparent to-resurva-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-        <div className="relative bg-white rounded-[14px] p-6 md:p-8 flex flex-col md:flex-row items-center gap-8">
+      {/* Hero Wrapped Highlight */}
+      <Card className="relative overflow-hidden border border-slate-200 rounded-2xl shadow-sm group">
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-50/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+        <CardContent className="p-6 md:p-8 flex flex-col md:flex-row items-center gap-8 relative z-10">
           <div className="flex-1 space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-widest border border-emerald-100">
               <Sparkles className="w-3.5 h-3.5" />
               Annual Recap
             </div>
-            <h3 className="text-3xl font-black text-slate-900 leading-tight">
+            <h3 className="text-2xl md:text-3xl font-bold text-slate-800 leading-tight tracking-tight">
               Kisah Keberlanjutan <br /> Bisnis Anda di Tahun 2024
             </h3>
-            <p className="text-slate-600 text-lg leading-relaxed">
+            <p className="text-slate-500 text-base md:text-lg leading-relaxed">
               Jelajahi dampak positif yang Anda buat selama setahun terakhir dalam format visual yang interaktif dan menarik.
             </p>
             <div className="pt-2">
               <Link href="/wrapped" target="_blank">
-                <Button variant="outline" className="border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white font-bold rounded-full px-8 underline-offset-4 decoration-2">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-full px-8 shadow-sm transition-all hover:shadow">
                   Buka Wrapped Sekarang
                 </Button>
               </Link>
             </div>
           </div>
-          <div className="w-full md:w-72 aspect-square bg-slate-100 rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0">
-             <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-resurva-gold/30 to-transparent" />
-             <Gift className="w-32 h-32 text-slate-900 relative z-10 animate-bounce" style={{ animationDuration: '3s' }} />
+          <div className="w-full md:w-64 aspect-square bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0">
+             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-100/50" />
+             <Gift className="w-24 h-24 text-emerald-600 relative z-10 animate-bounce" style={{ animationDuration: '3s' }} />
              <div className="absolute top-4 right-4 animate-pulse">
-                <div className="w-3 h-3 rounded-full bg-resurva-gold shadow-[0_0_15px_rgba(202,175,98,0.8)]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.6)]" />
              </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-xl p-8 text-white shadow-lg">
-        <div className="max-w-3xl">
-          <h3 className="text-xl font-semibold mb-2">Total Emisi Karbon Terhindari</h3>
-          <div className="text-5xl font-extrabold mb-4">{co2e.toLocaleString("id-ID")} <span className="text-2xl font-medium text-emerald-300">Kg CO2e</span></div>
-          <p className="text-emerald-100/80 leading-relaxed">
-            Pencapaian ini dihitung melalui metode Life Cycle Assessment (LCA) yang mengonversi berat makanan surplus yang diselamatkan menjadi nilai emisi gas rumah kaca yang berhasil dicegah jika makanan tersebut berakhir di TPA (Tempat Pembuangan Akhir).
-          </p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        {/* Total CO2e & Target */}
+        <div className="lg:col-span-5 bg-gradient-to-br from-emerald-800 to-teal-900 rounded-2xl p-8 text-white shadow-md relative overflow-hidden flex flex-col">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+          <div className="relative z-10 flex flex-col flex-1">
+            <h3 className="text-lg font-semibold text-emerald-100/90 mb-2">Total Emisi Karbon Terhindari</h3>
+            <div className="text-5xl font-extrabold mb-8 tracking-tight">
+              {co2e.toLocaleString("id-ID")} <span className="text-2xl font-medium text-emerald-300">Kg CO₂e</span>
+            </div>
+            
+            <div className="mt-auto bg-black/20 p-5 rounded-xl border border-white/10 backdrop-blur-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-emerald-50">
+                  <Target className="w-4 h-4 text-emerald-300" /> Target Tahunan
+                </div>
+                <span className="text-sm font-bold">{progressPercent}%</span>
+              </div>
+              <div className="w-full h-2.5 bg-black/30 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-emerald-400 to-emerald-300 rounded-full" style={{ width: `${progressPercent}%` }} />
+              </div>
+              <p className="text-xs text-emerald-100/70 mt-3 leading-relaxed">
+                Anda telah mencapai {progressPercent}% dari target reduksi {targetCo2e.toLocaleString("id-ID")} Kg CO₂e yang direncanakan tahun ini.
+              </p>
+            </div>
+          </div>
         </div>
+
+        {/* Chart */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl shadow-sm p-6 md:p-8 flex flex-col">
+          <div className="mb-6 flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800">Tren Reduksi Emisi Karbon</h3>
+              <p className="text-sm text-slate-500">Pergerakan Kg CO₂e terhindari</p>
+            </div>
+            <select 
+               className="h-9 w-[160px] rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+               value={chartPeriod}
+               onChange={e => setChartPeriod(e.target.value)}
+             >
+               <option value="6bulan">6 Bulan Terakhir</option>
+               <option value="tahun_ini">Tahun Ini (2024)</option>
+               <option value="semua">Semua Waktu</option>
+             </select>
+          </div>
+          <div className="flex-1 w-full min-h-[280px]">
+             <Bar data={chartData} options={chartOptions as any} />
+          </div>
+        </div>
+        
       </div>
 
       <div>
-        <h3 className="text-xl font-bold text-slate-800 mb-4">EPA Equivalencies Engine Visualizer</h3>
-        <p className="text-slate-600 mb-6 max-w-4xl">
-          Untuk mempermudah pemahaman publik, skor mentah Kg CO2e dikonversi ke dalam wujud analogi aktivitas sehari-hari menggunakan standar konversi *Environmental Protection Agency* (EPA). 
-          Dampak positif operasional Anda setara dengan:
+        <h3 className="text-xl font-bold text-slate-800 mb-4">Analogi Dampak (EPA Equivalencies)</h3>
+        <p className="text-slate-500 mb-6 max-w-4xl leading-relaxed">
+          Skor metrik dikonversi ke analogi aktivitas sehari-hari menggunakan standar *Environmental Protection Agency* (EPA) untuk mempermudah pelaporan kepada pemangku kepentingan.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Tree Card */}
-          <Card className="overflow-hidden border-2 border-green-100 hover:border-green-300 transition-colors">
-            <div className="h-32 bg-green-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-600">
-                <path d="M12 22v-8"/>
-                <path d="M12 14c-2.5-1.5-5-1-7-3 2-2 2-5 3-7 1.5 1 4 1 6 0 1 2 1 5 3 7-2 2-4.5 1.5-7 3Z"/>
-              </svg>
-            </div>
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-3xl font-bold text-green-700">{trees}</CardTitle>
-              <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wider">Bibit Pohon</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center text-sm text-slate-500">
-              Diserap oleh bibit pohon yang tumbuh selama 10 tahun.
+          <Card className="overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all group">
+            <CardContent className="p-0">
+              <div className="p-6 bg-gradient-to-br from-emerald-50 to-white flex items-center justify-between border-b border-slate-100">
+                <div className="w-14 h-14 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <TreePine className="w-7 h-7" />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-black text-emerald-700">{trees}</div>
+                  <div className="text-xs font-bold text-emerald-600/70 uppercase tracking-widest mt-1">Bibit Pohon</div>
+                </div>
+              </div>
+              <div className="p-5 bg-white text-sm text-slate-500 leading-relaxed">
+                Setara dengan penyerapan emisi oleh {trees} bibit pohon yang ditanam dan tumbuh selama 10 tahun.
+              </div>
             </CardContent>
           </Card>
 
           {/* Car Card */}
-          <Card className="overflow-hidden border-2 border-blue-100 hover:border-blue-300 transition-colors">
-            <div className="h-32 bg-blue-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-blue-600">
-                <path d="M14 16H9m10 0h3v-3.15a1 1 0 0 0-.84-.99L16 11l-2.7-3.6a2 2 0 0 0-1.6-.8H8.3a2 2 0 0 0-1.6.8L4 11l-5.16.86a1 1 0 0 0-.84.99V16h3"/>
-                <circle cx="6.5" cy="16.5" r="2.5"/>
-                <circle cx="16.5" cy="16.5" r="2.5"/>
-              </svg>
-            </div>
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-3xl font-bold text-blue-700">{kmDriven} KM</CardTitle>
-              <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wider">Perjalanan Mobil</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center text-sm text-slate-500">
-              Bahan bakar yang dihemat dari perjalanan mobil penumpang biasa.
+          <Card className="overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group">
+            <CardContent className="p-0">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-white flex items-center justify-between border-b border-slate-100">
+                <div className="w-14 h-14 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Car className="w-7 h-7" />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-black text-blue-700">{kmDriven}</div>
+                  <div className="text-xs font-bold text-blue-600/70 uppercase tracking-widest mt-1">KM Mobil</div>
+                </div>
+              </div>
+              <div className="p-5 bg-white text-sm text-slate-500 leading-relaxed">
+                Bahan bakar bensin yang berhasil dihemat dari jarak {kmDriven} KM perjalanan mobil penumpang biasa.
+              </div>
             </CardContent>
           </Card>
 
           {/* Phone Card */}
-          <Card className="overflow-hidden border-2 border-amber-100 hover:border-amber-300 transition-colors">
-            <div className="h-32 bg-amber-50 flex items-center justify-center">
-              <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-amber-600">
-                <rect width="14" height="20" x="5" y="2" rx="2" ry="2"/>
-                <path d="M12 18h.01"/>
-                <path d="M10 9l1 3 3-2"/>
-              </svg>
-            </div>
-            <CardHeader className="text-center pb-2">
-              <CardTitle className="text-3xl font-bold text-amber-700">{phoneHours} Jam</CardTitle>
-              <CardDescription className="text-sm font-medium text-slate-600 uppercase tracking-wider">Pengisian Daya</CardDescription>
-            </CardHeader>
-            <CardContent className="text-center text-sm text-slate-500">
-              Energi listrik yang digunakan untuk mengisi daya smartphone.
+          <Card className="overflow-hidden border border-slate-200 shadow-sm hover:shadow-md hover:border-amber-200 transition-all group">
+            <CardContent className="p-0">
+              <div className="p-6 bg-gradient-to-br from-amber-50 to-white flex items-center justify-between border-b border-slate-100">
+                <div className="w-14 h-14 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <Smartphone className="w-7 h-7" />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-black text-amber-700">{phoneHours}</div>
+                  <div className="text-xs font-bold text-amber-600/70 uppercase tracking-widest mt-1">Jam Daya HP</div>
+                </div>
+              </div>
+              <div className="p-5 bg-white text-sm text-slate-500 leading-relaxed">
+                Energi listrik yang digunakan untuk terus-menerus mengisi daya sebuah *smartphone* selama {phoneHours} jam.
+              </div>
             </CardContent>
           </Card>
         </div>
