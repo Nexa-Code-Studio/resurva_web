@@ -14,8 +14,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Sparkles, MessageSquare, Send, X, ArrowLeft, Bot, RefreshCw } from "lucide-react";
-import { useMerchantContext } from "@/lib/contexts/MerchantContext";
+import { Sparkles, MessageSquare, Send, X, Bot, RefreshCw, ChevronLeft, ChevronRight } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -37,7 +36,8 @@ const TRANSLATIONS = {
   en: {
     title: "Store Sales Analytics",
     description: "Analyze your store performance, revenue trend, and get AI business insights.",
-    salesTrend: "Weekly Sales Trend (Rp)",
+    salesTrendWeekly: "Weekly Sales Trend (Rp)",
+    salesTrendMonthly: "Monthly Sales Trend (Rp)",
     aiInsightTitle: "AI Business Assistant Analysis",
     insight1Title: "Sales & Stock Optimization",
     insight1Desc: "Based on weekly trends, bakery items experience a 15% demand drop on Mondays. We recommend reducing the morning prep batch size for Chocolate Bread by 15% next Monday.",
@@ -51,11 +51,14 @@ const TRANSLATIONS = {
     mockResponse1: "Your Chocolate Bread surplus conversions are highest on Friday evenings between 5 PM and 8 PM. Setting a flash sale during these hours yields a 95% sell-out rate.",
     mockResponse2: "Currently, 2 products are nearing expiration within 24 hours. I suggest offering them as a 'Surplus Combo' via POS take-away to quickly clear stock.",
     mockResponseDefault: "Based on store data, your average daily profit is Rp 450,000. Makanan Berat (Heavy Meal) category contributes 48% of total revenue. Reducing surplus wastage could increase profit margin by up to 6.2%.",
+    weekly: "Weekly",
+    monthly: "Monthly",
   },
   id: {
     title: "Analitik Penjualan Toko",
     description: "Analisis performa toko Anda, tren pendapatan, dan dapatkan analisis bisnis berbasis AI.",
-    salesTrend: "Tren Penjualan Mingguan (Rp)",
+    salesTrendWeekly: "Tren Penjualan Mingguan (Rp)",
+    salesTrendMonthly: "Tren Penjualan Bulanan (Rp)",
     aiInsightTitle: "Analisis AI Business Assistant",
     insight1Title: "Optimasi Penjualan & Ketersediaan Stok",
     insight1Desc: "Berdasarkan tren mingguan, produk bakery mengalami penurunan permintaan sebesar 15% pada hari Senin. Direkomendasikan untuk mengurangi volume produksi Roti Cokelat sebanyak 15% pada Senin depan.",
@@ -69,15 +72,19 @@ const TRANSLATIONS = {
     mockResponse1: "Penjualan Roti Cokelat surplus tertinggi terjadi pada Jumat malam pukul 17.00 - 20.00. Mengaktifkan Flash Sale pada jam tersebut meningkatkan tingkat kelarisan hingga 95%.",
     mockResponse2: "Saat ini ada 2 produk yang akan kedaluwarsa dalam 24 jam. Saya sarankan Anda membuat promo 'Paket Bundling Surplus' di POS untuk menghabiskan stok dengan cepat.",
     mockResponseDefault: "Berdasarkan data toko Anda, rata-rata laba harian Anda adalah Rp 450.000. Kategori Makanan Berat menyumbang 48% dari total pendapatan. Mengurangi surplus terbuang dapat menaikkan margin hingga 6,2%.",
+    weekly: "Mingguan",
+    monthly: "Bulanan",
   }
 };
 
 export default function StoreAnalyticsPage() {
-  const { orders } = useMerchantContext();
   const [lang, setLang] = useState<"en" | "id">("en");
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [inputVal, setInputVal] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [timeFrame, setTimeFrame] = useState<"weekly" | "monthly">("weekly");
+  const [dateOffset, setDateOffset] = useState(0);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Load language preference from localStorage
@@ -136,20 +143,51 @@ export default function StoreAnalyticsPage() {
     }, 800);
   };
 
-  // Mock Sales Data
-  const weeklySalesData = {
-    labels: lang === "en" 
-      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] 
-      : ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"],
+  // Format dynamic date ranges based on dateOffset
+  const getRangeText = () => {
+    if (timeFrame === "weekly") {
+      const baseDate = new Date(2026, 5, 26); // June 26, 2026
+      baseDate.setDate(baseDate.getDate() + dateOffset * 7);
+      const endDate = new Date(baseDate);
+      endDate.setDate(endDate.getDate() + 6);
+      
+      const format = (d: Date) => d.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", { day: "numeric", month: "short", year: "numeric" });
+      return `${format(baseDate)} - ${format(endDate)}`;
+    } else {
+      const baseDate = new Date(2026, 5, 1); // June 1, 2026
+      baseDate.setMonth(baseDate.getMonth() + dateOffset);
+      return baseDate.toLocaleDateString(lang === "en" ? "en-US" : "id-ID", { month: "long", year: "numeric" });
+    }
+  };
+
+  // Generate slightly modified mock data based on offset for interactive experience
+  const getWeeklyData = () => {
+    const defaultData = [420000, 380000, 480000, 520000, 680000, 850000, 780000];
+    return defaultData.map(v => Math.max(100000, v + dateOffset * 35000));
+  };
+
+  const getMonthlyData = () => {
+    const defaultData = [12500000, 14200000, 13800000, 15500000, 18200000, 19500000, 17800000, 19200000, 21000000, 20500000, 23000000, 24800000];
+    return defaultData.map(v => Math.max(5000000, v + dateOffset * 1200000));
+  };
+
+  const salesData = {
+    labels: timeFrame === "weekly"
+      ? (lang === "en" 
+        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] 
+        : ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"])
+      : (lang === "en"
+        ? ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        : ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]),
     datasets: [
       {
-        label: t.salesTrend,
-        data: [420000, 380000, 480000, 520000, 680000, 850000, 780000],
-        borderColor: "rgba(79, 70, 229, 1)", // Indigo-600
-        backgroundColor: "rgba(79, 70, 229, 0.08)",
+        label: timeFrame === "weekly" ? t.salesTrendWeekly : t.salesTrendMonthly,
+        data: timeFrame === "weekly" ? getWeeklyData() : getMonthlyData(),
+        borderColor: "#005043", // Brand Resurva Dark Green
+        backgroundColor: "rgba(0, 80, 67, 0.06)", // Faded Brand Green
         tension: 0.35,
         fill: true,
-        pointBackgroundColor: "rgba(79, 70, 229, 1)",
+        pointBackgroundColor: "#005043",
         pointHoverRadius: 7,
       },
     ],
@@ -184,26 +222,74 @@ export default function StoreAnalyticsPage() {
       </div>
 
       {/* Chart Section */}
-      <Card className="border-slate-200/60 shadow-sm overflow-hidden">
+      <Card className="border-slate-200/60 shadow-sm overflow-hidden bg-white">
         <CardHeader className="border-b border-slate-100/80 bg-slate-50/50 pb-4">
-          <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            <RefreshCw className="w-4 h-4 text-indigo-600 animate-spin-slow" />
-            {t.salesTrend}
-          </CardTitle>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-resurva-dark animate-spin-slow" />
+              {timeFrame === "weekly" ? t.salesTrendWeekly : t.salesTrendMonthly}
+            </CardTitle>
+
+            {/* Timeframe & Pagination Date Filter */}
+            <div className="flex flex-wrap items-center gap-4">
+              {/* Pagination Controls */}
+              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border">
+                <button 
+                  onClick={() => setDateOffset(prev => prev - 1)}
+                  className="p-1.5 hover:bg-white rounded-lg transition-colors cursor-pointer text-slate-600"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-xs font-bold text-slate-700 px-2 min-w-[150px] text-center select-none">
+                  {getRangeText()}
+                </span>
+                <button 
+                  onClick={() => setDateOffset(prev => prev + 1)}
+                  className="p-1.5 hover:bg-white rounded-lg transition-colors cursor-pointer text-slate-600"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Weekly/Monthly Toggle */}
+              <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button
+                  onClick={() => { setTimeFrame("weekly"); setDateOffset(0); }}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    timeFrame === "weekly"
+                      ? "bg-white text-resurva-dark shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {t.weekly}
+                </button>
+                <button
+                  onClick={() => { setTimeFrame("monthly"); setDateOffset(0); }}
+                  className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    timeFrame === "monthly"
+                      ? "bg-white text-resurva-dark shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {t.monthly}
+                </button>
+              </div>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="pt-6">
           <div className="h-80 w-full">
-            <Line data={weeklySalesData} options={chartOptions} />
+            <Line data={salesData} options={chartOptions} />
           </div>
         </CardContent>
       </Card>
 
       {/* AI Analysis Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden bg-gradient-to-br from-indigo-50/30 via-white to-white border-l-4 border-l-indigo-600">
+        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden bg-gradient-to-br from-indigo-50/30 via-white to-white border-l-4 border-l-resurva-dark">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-extrabold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-indigo-600" />
+            <CardTitle className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-resurva-dark" />
               {t.insight1Title}
             </CardTitle>
           </CardHeader>
@@ -214,9 +300,9 @@ export default function StoreAnalyticsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden bg-gradient-to-br from-emerald-50/30 via-white to-white border-l-4 border-l-emerald-600">
+        <Card className="border-slate-200/60 shadow-sm relative overflow-hidden bg-gradient-to-br from-emerald-50/30 via-white to-white border-l-4 border-l-emerald-650">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-extrabold text-emerald-950 uppercase tracking-wider flex items-center gap-1.5">
+            <CardTitle className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
               <Bot className="w-4 h-4 text-emerald-600" />
               {t.insight2Title}
             </CardTitle>
@@ -232,7 +318,7 @@ export default function StoreAnalyticsPage() {
       {/* Floating Action Button (FAB) */}
       <button 
         onClick={() => setIsChatOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-indigo-100"
+        className="fixed bottom-6 right-6 z-40 bg-resurva-dark hover:bg-resurva-dark-light text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer ring-4 ring-emerald-100"
         title={lang === "en" ? "Chat with AI Assistant" : "Chat dengan AI Assistant"}
       >
         <MessageSquare className="w-6 h-6 animate-pulse" />
@@ -250,14 +336,14 @@ export default function StoreAnalyticsPage() {
           {/* Chat Panel Drawer */}
           <div className="relative w-full md:w-[420px] bg-white h-full shadow-2xl flex flex-col z-50 animate-in slide-in-from-right duration-300">
             {/* Header */}
-            <div className="p-4 bg-indigo-600 text-white flex items-center justify-between shadow-md shrink-0">
+            <div className="p-4 bg-resurva-dark text-white flex items-center justify-between shadow-md shrink-0">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center text-white shrink-0">
                   <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
                   <h3 className="font-bold text-sm leading-none">{t.chatTitle}</h3>
-                  <span className="text-[10px] text-indigo-200 mt-1 block">Online Assistant</span>
+                  <span className="text-[10px] text-emerald-200 mt-1 block">Online Assistant</span>
                 </div>
               </div>
               <button 
@@ -276,13 +362,13 @@ export default function StoreAnalyticsPage() {
                   className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} items-start gap-2.5`}
                 >
                   {msg.sender === "ai" && (
-                    <div className="w-8 h-8 rounded-lg bg-indigo-150/40 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-resurva-dark flex items-center justify-center font-bold text-xs shrink-0">
                       AI
                     </div>
                   )}
                   <div className={`p-3.5 rounded-2xl max-w-[80%] text-sm leading-relaxed ${
                     msg.sender === "user" 
-                      ? "bg-indigo-600 text-white rounded-tr-none" 
+                      ? "bg-resurva-dark text-white rounded-tr-none" 
                       : "bg-white text-slate-800 shadow-sm border border-slate-100 rounded-tl-none"
                   }`}>
                     {msg.text}
@@ -296,14 +382,14 @@ export default function StoreAnalyticsPage() {
             <form onSubmit={handleSendMessage} className="p-4 border-t border-slate-100 bg-white flex gap-2 shrink-0">
               <input 
                 type="text" 
-                className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-slate-50 focus:bg-white transition-all"
+                className="flex-1 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-resurva-dark bg-slate-50 focus:bg-white transition-all"
                 placeholder={t.chatInputPlaceholder}
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
               />
               <button 
                 type="submit" 
-                className="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl transition-colors cursor-pointer shadow-sm"
+                className="bg-resurva-dark hover:bg-resurva-dark-light text-white p-3 rounded-xl transition-colors cursor-pointer shadow-sm"
               >
                 <Send className="w-4 h-4" />
               </button>

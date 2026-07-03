@@ -12,10 +12,13 @@ export function MobilePreviewModal({ isOpen, onClose }: MobilePreviewModalProps)
   const { products } = useMerchantContext();
   const [activeTab, setActiveTab] = useState<"Surplus" | "Reguler">("Surplus");
 
-  // Filter only published products based on active tab
-  const publishedProducts = products.filter(
-    (p) => p.isPublished && (p.menuType === activeTab || (!p.menuType && activeTab === "Surplus"))
-  );
+  // Filter only published products based on active tab batches
+  const nowTime = Date.now();
+  const publishedProducts = products.filter((p) => {
+    const activeBatches = p.batches?.filter(b => !b.expiryDate || new Date(b.expiryDate).getTime() > nowTime) || [];
+    const hasMatchingBatch = activeBatches.some(b => b.menuType === activeTab);
+    return p.isPublished && hasMatchingBatch;
+  });
 
   if (!isOpen) return null;
 

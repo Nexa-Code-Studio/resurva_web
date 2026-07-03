@@ -131,20 +131,29 @@ export default function MerchantDashboard() {
 
   // Helper to generate multiple batches for a product to demonstrate Surplus & Regular status
   const getMockBatches = (product: Product) => {
-    if (product.id === "prod-1") {
-      return [
-        { qty: 6, status: t.surplus, expiry: lang === "en" ? "12 hrs left" : "12 jam lagi" },
-        { qty: 4, status: t.regular, expiry: "-" }
-      ];
-    }
-    if (product.id === "prod-2") {
-      return [
-        { qty: 3, status: t.surplus, expiry: lang === "en" ? "2 days left" : "2 hari lagi" },
-        { qty: 2, status: t.regular, expiry: "-" }
-      ];
+    if (product.batches && product.batches.length > 0) {
+      return product.batches.map(b => {
+        let expiryText = "-";
+        if (b.expiryDate) {
+          const diffHours = (new Date(b.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60);
+          if (diffHours <= 24 && diffHours > 0) {
+            expiryText = lang === "en" ? `${Math.ceil(diffHours)}h left` : `${Math.ceil(diffHours)} jam lagi`;
+          } else if (diffHours > 24) {
+            const diffDays = Math.ceil(diffHours / 24);
+            expiryText = lang === "en" ? `${diffDays} days left` : `${diffDays} hari lagi`;
+          } else {
+            expiryText = lang === "en" ? "Expired" : "Kedaluwarsa";
+          }
+        }
+        return {
+          qty: b.qty,
+          status: b.menuType === "Surplus" ? t.surplus : t.regular,
+          expiry: expiryText
+        };
+      });
     }
     return [
-      { qty: product.quantity, status: product.menuType === "Surplus" ? t.surplus : t.regular, expiry: product.expiryDate ? new Date(product.expiryDate).toLocaleDateString() : "-" }
+      { qty: product.quantity, status: t.regular, expiry: "-" }
     ];
   };
 

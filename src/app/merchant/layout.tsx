@@ -12,18 +12,45 @@ const merchantProfile: ProfileInfo = {
   initials: "UM",
 };
 
-const titleMapping = {
-  "/merchant": "Dashboard",
-  "/merchant/pos": "Kasir / Point of Sale",
-  "/merchant/analytics": "Analitik Toko",
-  "/merchant/inventory": "Manajemen Inventaris",
-  "/merchant/orders": "Pesanan & Logistik",
-};
-
 function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
   const { orders } = useMerchantContext();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [lang, setLang] = useState<"en" | "id">("en");
+
+  // Load language preference from localStorage
+  useEffect(() => {
+    const savedLang = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
+    if (savedLang) {
+      setLang(savedLang);
+    } else {
+      const systemLang = navigator.language.startsWith("id") ? "id" : "en";
+      setLang(systemLang);
+    }
+
+    const handleLangChange = () => {
+      const currentSaved = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
+      if (currentSaved) {
+        setLang(currentSaved);
+      }
+    };
+    window.addEventListener("languageChange", handleLangChange);
+    return () => window.removeEventListener("languageChange", handleLangChange);
+  }, []);
+
+  const titleMapping = lang === "en" ? {
+    "/merchant": "Dashboard",
+    "/merchant/pos": "Cashier / Point of Sale",
+    "/merchant/analytics": "Store Analytics",
+    "/merchant/inventory": "Inventory Management",
+    "/merchant/orders": "Orders & Logistics",
+  } : {
+    "/merchant": "Dasbor",
+    "/merchant/pos": "Kasir / Point of Sale",
+    "/merchant/analytics": "Analitik Toko",
+    "/merchant/inventory": "Manajemen Inventaris",
+    "/merchant/orders": "Pesanan & Logistik",
+  };
 
   // Open/close sidebar based on initial screen size
   useEffect(() => {
