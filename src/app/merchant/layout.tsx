@@ -44,12 +44,14 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
     "/merchant/analytics": "Store Analytics",
     "/merchant/inventory": "Inventory Management",
     "/merchant/orders": "Orders & Logistics",
+    "/merchant/profile": "Store Profile",
   } : {
     "/merchant": "Dasbor",
     "/merchant/pos": "Kasir / Point of Sale",
     "/merchant/analytics": "Analitik Toko",
     "/merchant/inventory": "Manajemen Inventaris",
     "/merchant/orders": "Pesanan & Logistik",
+    "/merchant/profile": "Profil Toko",
   };
 
   // Open/close sidebar based on initial screen size
@@ -68,8 +70,19 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
 
   const newOrdersCount = orders.filter(o => o.status === "Menunggu Konfirmasi").length;
 
-  const menus: MenuItem[] = [
+  const menus: MenuItem[] = lang === "en" ? [
     { name: "Dashboard", href: "/merchant" },
+    { name: "Cashier (POS)", href: "/merchant/pos" },
+    { name: "Store Analytics", href: "/merchant/analytics" },
+    { name: "Inventory", href: "/merchant/inventory" },
+    { 
+      name: "Orders", 
+      href: "/merchant/orders",
+      badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
+    },
+    { name: "Store Profile", href: "/merchant/profile" },
+  ] : [
+    { name: "Dasbor", href: "/merchant" },
     { name: "Kasir (POS)", href: "/merchant/pos" },
     { name: "Analitik Toko", href: "/merchant/analytics" },
     { name: "Inventaris", href: "/merchant/inventory" },
@@ -78,6 +91,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
       href: "/merchant/orders",
       badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
     },
+    { name: "Profil Toko", href: "/merchant/profile" },
   ];
 
   return (
