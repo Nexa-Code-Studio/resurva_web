@@ -26,6 +26,16 @@ function MapUpdater({ lat, lng }: { lat: number; lng: number }) {
   useEffect(() => {
     map.setView([lat, lng], map.getZoom(), { animate: true });
   }, [lat, lng, map]);
+
+  // Fix grey gap issue: modal animations cause Leaflet to miscalculate container size.
+  // Invalidate size shortly after mount to recalculate map tiles.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [map]);
+
   return null;
 }
 
