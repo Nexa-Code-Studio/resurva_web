@@ -94,6 +94,7 @@ export default function POSPage() {
   const { products, addOrder } = useMerchantContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
+  const [activeTypeFilter, setActiveTypeFilter] = useState<"Semua" | "Surplus" | "Reguler">("Semua");
   const [orderType, setOrderType] = useState<OrderType>("Dine-In");
   const [lang, setLang] = useState<"en" | "id">("en");
 
@@ -142,9 +143,20 @@ export default function POSPage() {
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase());
       const isAllText = activeCategory === "Semua" || activeCategory === "All";
       const matchesCategory = isAllText || p.category === activeCategory;
-      return matchesSearch && matchesCategory && p.isPublished;
+      
+      const nowTime = Date.now();
+      const activeBatches = p.batches?.filter(b => !b.expiryDate || new Date(b.expiryDate).getTime() > nowTime) || [];
+      
+      let matchesType = true;
+      if (activeTypeFilter === "Surplus") {
+        matchesType = activeBatches.some(b => b.menuType === "Surplus");
+      } else if (activeTypeFilter === "Reguler") {
+        matchesType = activeBatches.some(b => b.menuType === "Reguler");
+      }
+
+      return matchesSearch && matchesCategory && matchesType && p.isPublished;
     });
-  }, [products, searchQuery, activeCategory]);
+  }, [products, searchQuery, activeCategory, activeTypeFilter]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.totalPrice, 0);
   const tax = subtotal * 0.11; // 11% PB1
@@ -212,7 +224,8 @@ export default function POSPage() {
     const cartItemId = `${product.id}-${variantStr}`;
     
     // Calculate unit price
-    const basePrice = product.menuType === "Surplus" ? product.surplusPrice : product.originalPrice;
+    const isSurplusSelected = activeTypeFilter === "Surplus" || (activeTypeFilter === "Semua" && product.batches?.some(b => b.menuType === "Surplus"));
+    const basePrice = isSurplusSelected ? product.surplusPrice : product.originalPrice;
     let variantsPrice = 0;
     Object.values(variants).flat().forEach(v => { variantsPrice += v.additionalPrice; });
     const unitPrice = basePrice + variantsPrice;
@@ -498,23 +511,46 @@ export default function POSPage() {
     <div className="h-full flex flex-col lg:flex-row overflow-hidden relative">
       {/* Left: Product Grid */}
       <div className="flex-1 flex flex-col bg-slate-100 border-r border-slate-200 min-w-0">
-        <div className="p-4 bg-white border-b border-slate-200 flex flex-col sm:flex-row gap-4 items-stretch sm:items-center shrink-0">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
-            <Input 
-              placeholder={t.searchPlaceholder} 
-              className="pl-10 h-12 bg-slate-50 border-none" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        <div className="p-4 bg-white border-b border-slate-200 flex flex-col gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 w-5 h-5 text-slate-400" />
+              <Input 
+                placeholder={t.searchPlaceholder} 
+                className="pl-10 h-12 bg-slate-50 border-none rounded-xl" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            {/* Surplus/Reguler Toggle Filter */}
+            <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+              {([
+                { key: "Semua", en: "All", id: "Semua" },
+                { key: "Surplus", en: "Surplus", id: "Surplus" },
+                { key: "Reguler", en: "Regular", id: "Reguler" }
+              ] as const).map(item => (
+                <button
+                  key={item.key}
+                  onClick={() => setActiveTypeFilter(item.key)}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    activeTypeFilter === item.key
+                      ? "bg-white text-resurva-dark shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  {lang === "en" ? item.en : item.id}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {/* Categories Tab */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 border-t border-slate-100 pt-2">
             {categories.map(cat => (
               <button 
                 key={cat} 
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-full whitespace-nowrap font-medium text-sm transition-colors ${
-                  activeCategory === cat ? "bg-resurva-dark text-white shadow-md" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                className={`px-4 py-1.5 rounded-full whitespace-nowrap font-medium text-xs transition-colors cursor-pointer ${
+                  activeCategory === cat ? "bg-resurva-dark text-white shadow-xs" : "bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100"
                 }`}
               >
                 {cat}
@@ -526,7 +562,8 @@ export default function POSPage() {
         <div className="flex-1 overflow-y-auto p-4 pb-24 lg:p-4">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
             {filteredProducts.map(product => {
-              const price = product.menuType === "Surplus" ? product.surplusPrice : product.originalPrice;
+              const isSurplusMode = activeTypeFilter === "Surplus" || (activeTypeFilter === "Semua" && product.batches?.some(b => b.menuType === "Surplus"));
+              const price = isSurplusMode ? product.surplusPrice : product.originalPrice;
               const hasVariants = product.variantGroups && product.variantGroups.length > 0;
               return (
                 <div 
@@ -540,7 +577,7 @@ export default function POSPage() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-slate-400">IMG</div>
                     )}
-                    {product.menuType === "Surplus" && (
+                    {isSurplusMode && (
                       <div className="absolute top-2 right-2 bg-resurva-gold text-resurva-dark text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
                         SURPLUS
                       </div>
@@ -552,7 +589,7 @@ export default function POSPage() {
                       {hasVariants && <span className="text-[10px] text-slate-400 mt-1 block">{t.availableVariant}</span>}
                     </div>
                     <div>
-                      {product.menuType === "Surplus" && (
+                      {isSurplusMode && (
                          <p className="text-[10px] text-slate-400 line-through">Rp {product.originalPrice.toLocaleString('id-ID')}</p>
                       )}
                       <p className="font-bold text-resurva-dark">Rp {price.toLocaleString('id-ID')}</p>

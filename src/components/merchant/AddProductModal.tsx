@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useMerchantContext, Product, VariantGroup, VariantOption } from "@/lib/contexts/MerchantContext";
+import { useMerchantContext, Product, VariantGroup, VariantOption, ProductIngredient } from "@/lib/contexts/MerchantContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Info } from "lucide-react";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -15,73 +15,198 @@ interface AddProductModalProps {
   productToEdit?: Product | null;
 }
 
+const CARBON_CATEGORIES = [
+  "Beef (beef herd)",
+  "Lamb & Mutton",
+  "Beef (dairy herd)",
+  "Crustaceans (Farmed - Udang/Kepiting)",
+  "Pig Meat",
+  "Fish (Farmed)",
+  "Poultry Meat (Ayam/Unggas)",
+  "Eggs",
+  "Cheese",
+  "Milk (Cow)",
+  "Tofu (Kedelai)",
+  "Groundnuts (Kacang Tanah)",
+  "Other Pulses (Kacang-kacangan lain)",
+  "Peas (Kacang Polong)",
+  "Nuts (Kacang Pohon)",
+  "Rice (Flooded)",
+  "Oatmeal",
+  "Wheat & Rye (Bread)",
+  "Maize (Jagung)",
+  "Cassava (Singkong)",
+  "Potatoes (Kentang)",
+  "Palm Oil",
+  "Soybean Oil",
+  "Olive Oil",
+  "Rapeseed Oil",
+  "Sunflower Oil",
+  "Tomatoes",
+  "Brassicas (Kubis/Brokoli)",
+  "Onions & Leeks",
+  "Root Vegetables",
+  "Berries & Grapes",
+  "Bananas",
+  "Apples",
+  "Citrus Fruit",
+  "Cane Sugar",
+  "Beet Sugar",
+  "Dark Chocolate",
+  "Coffee",
+  "Wine",
+  "Beer"
+];
+
+const TRANSLATIONS = {
+  en: {
+    addTitle: "Add New Product",
+    editTitle: "Edit Product",
+    nameLabel: "Product Name",
+    descLabel: "Description",
+    descPlaceholder: "Describe your menu...",
+    skuLabel: "SKU / Barcode",
+    weightLabel: "Estimated Weight per Product (kg)",
+    regPriceLabel: "Regular Price (Rp)",
+    surpPriceLabel: "Surplus Price (Rp)",
+    imgLabel: "Product Image",
+    uploadPlaceholder: "Click to upload",
+    catLabel: "Category",
+    publishLabel: "Show in Marketplace",
+    publishDesc: "Activate for customers to see this product",
+    ingredientsTitle: "Main Food Ingredients",
+    ingredientsDesc: "Select one or more categories. Total percentage must sum to 100%.",
+    addIngredientBtn: "Add Ingredient",
+    variantsTitle: "Variants & Extra Options",
+    variantsDesc: "Example: Spicy Level, Toppings, Size.",
+    addVariantBtn: "Add Variant Group",
+    varNameLabel: "Variant Group Name",
+    requiredLabel: "Required?",
+    requiredYes: "Yes, Required",
+    requiredNo: "No, Optional",
+    maxSelection: "Max Selections",
+    optionsLabel: "Options list:",
+    addOptionBtn: "Add Option",
+    cancelBtn: "Cancel",
+    saveBtn: "Save Product",
+    saveChangesBtn: "Save Changes",
+    stockNotice: "Note: Stock is managed independently using the 'Stock' button on the product inventory row.",
+    validationName: "Product name is required.",
+    validationPercentage: "Total composition percentage must sum to 100%. Current total: "
+  },
+  id: {
+    addTitle: "Tambah Produk Baru",
+    editTitle: "Edit Produk",
+    nameLabel: "Nama Produk",
+    descLabel: "Deskripsi Menu",
+    descPlaceholder: "Deskripsikan menu...",
+    skuLabel: "SKU / Barcode",
+    weightLabel: "Estimasi Berat per Produk (kg)",
+    regPriceLabel: "Harga Reguler (Rp)",
+    surpPriceLabel: "Harga Surplus (Rp)",
+    imgLabel: "Gambar Produk",
+    uploadPlaceholder: "Klik untuk upload",
+    catLabel: "Kategori",
+    publishLabel: "Tampil di Marketplace",
+    publishDesc: "Aktifkan agar user dapat melihat menu ini",
+    ingredientsTitle: "Kandungan Utama Bahan Makanan",
+    ingredientsDesc: "Pilih satu atau beberapa kandungan utama. Persentase total harus 100%.",
+    addIngredientBtn: "Tambah Kandungan",
+    variantsTitle: "Varian & Opsi Tambahan",
+    variantsDesc: "Contoh: Level Pedas, Pilihan Topping, Ukuran Gelas.",
+    addVariantBtn: "Tambah Grup Varian",
+    varNameLabel: "Nama Grup Varian",
+    requiredLabel: "Wajib Dipilih?",
+    requiredYes: "Ya, Wajib (Required)",
+    requiredNo: "Tidak (Optional)",
+    maxSelection: "Maksimal Pilihan",
+    optionsLabel: "Daftar Pilihan:",
+    addOptionBtn: "Tambah Pilihan",
+    cancelBtn: "Batal",
+    saveBtn: "Simpan Produk",
+    saveChangesBtn: "Simpan Perubahan",
+    stockNotice: "Catatan: Stok dikelola secara mandiri melalui tombol 'Stok' di baris tabel produk.",
+    validationName: "Nama produk wajib diisi.",
+    validationPercentage: "Total persentase kandungan harus 100%. Saat ini: "
+  }
+};
+
 export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductModalProps) {
-  const { addProduct, updateProduct } = useMerchantContext();
+  const { addProduct, updateProduct, categories } = useMerchantContext();
+  const [lang, setLang] = useState<"en" | "id">("en");
+  
   const [formData, setFormData] = useState<{
     name: string;
     category: string;
     description: string;
     sku: string;
-    quantity: number;
-    minStock: number;
+    weight: number;
     originalPrice: number;
     surplusPrice: number;
-    expiryDate: string;
     imageUrl: string;
     isPublished: boolean;
-    menuType: "Surplus" | "Reguler";
     variantGroups: VariantGroup[];
+    ingredients: ProductIngredient[];
   }>({
     name: "",
-    category: "",
+    category: categories[0] || "Bakery",
     description: "",
     sku: "",
-    quantity: 1,
-    minStock: 5,
+    weight: 0.1,
     originalPrice: 0,
     surplusPrice: 0,
-    expiryDate: "",
     imageUrl: "",
     isPublished: false,
-    menuType: "Surplus",
     variantGroups: [],
+    ingredients: [
+      { carbonCategory: CARBON_CATEGORIES[17], percentage: 100 } // Wheat & Rye default
+    ],
   });
+
+  useEffect(() => {
+    const savedLang = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
+    if (savedLang) {
+      setLang(savedLang);
+    }
+  }, [isOpen]);
+
+  const t = TRANSLATIONS[lang];
 
   useEffect(() => {
     if (isOpen && productToEdit) {
       setFormData({
         name: productToEdit.name || "",
-        category: productToEdit.category || "",
+        category: productToEdit.category || categories[0] || "Bakery",
         description: productToEdit.description || "",
         sku: productToEdit.sku || "",
-        quantity: productToEdit.quantity || 1,
-        minStock: productToEdit.minStock || 5,
+        weight: productToEdit.weight !== undefined ? productToEdit.weight : 0.1,
         originalPrice: productToEdit.originalPrice || 0,
         surplusPrice: productToEdit.surplusPrice || 0,
-        expiryDate: productToEdit.expiryDate ? new Date(productToEdit.expiryDate).toISOString().slice(0, 16) : "",
         imageUrl: productToEdit.imageUrl || "",
         isPublished: productToEdit.isPublished || false,
-        menuType: productToEdit.menuType || "Surplus",
         variantGroups: productToEdit.variantGroups ? JSON.parse(JSON.stringify(productToEdit.variantGroups)) : [],
+        ingredients: productToEdit.ingredients && productToEdit.ingredients.length > 0 
+          ? JSON.parse(JSON.stringify(productToEdit.ingredients)) 
+          : [{ carbonCategory: CARBON_CATEGORIES[17], percentage: 100 }],
       });
     } else if (isOpen) {
       setFormData({
         name: "",
-        category: "",
+        category: categories[0] || "Bakery",
         description: "",
         sku: "",
-        quantity: 1,
-        minStock: 5,
+        weight: 0.1,
         originalPrice: 0,
         surplusPrice: 0,
-        expiryDate: "",
         imageUrl: "",
         isPublished: false,
-        menuType: "Surplus",
         variantGroups: [],
+        ingredients: [
+          { carbonCategory: CARBON_CATEGORIES[17], percentage: 100 }
+        ],
       });
     }
-  }, [isOpen, productToEdit]);
+  }, [isOpen, productToEdit, categories]);
 
   if (!isOpen) return null;
 
@@ -90,7 +215,7 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
     setFormData((prev) => ({
       ...prev,
       [name]:
-        name === "quantity" || name === "originalPrice" || name === "surplusPrice" || name === "minStock"
+        name === "originalPrice" || name === "surplusPrice" || name === "weight"
           ? Number(value)
           : value,
     }));
@@ -105,6 +230,81 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
       const url = URL.createObjectURL(e.target.files[0]);
       setFormData((prev) => ({ ...prev, imageUrl: url }));
     }
+  };
+
+  // --- Multi-Ingredient Logic ---
+  const addIngredient = () => {
+    setFormData(prev => {
+      const currentList = [...prev.ingredients];
+      const newIng: ProductIngredient = {
+        carbonCategory: CARBON_CATEGORIES[0],
+        percentage: 0
+      };
+      const nextList = [...currentList, newIng];
+      
+      const count = nextList.length;
+      const basePercentage = Math.floor(100 / count);
+      let remainder = 100 - (basePercentage * count);
+      
+      const updatedList = nextList.map((ing, i) => {
+        const extra = i < remainder ? 1 : 0;
+        return {
+          ...ing,
+          percentage: basePercentage + extra
+        };
+      });
+
+      return {
+        ...prev,
+        ingredients: updatedList
+      };
+    });
+  };
+
+  const removeIngredient = (idx: number) => {
+    setFormData(prev => {
+      const nextList = prev.ingredients.filter((_, i) => i !== idx);
+      if (nextList.length === 0) {
+        return { ...prev, ingredients: [{ carbonCategory: CARBON_CATEGORIES[17], percentage: 100 }] };
+      }
+      
+      const count = nextList.length;
+      const basePercentage = Math.floor(100 / count);
+      let remainder = 100 - (basePercentage * count);
+      
+      const updatedList = nextList.map((ing, i) => {
+        const extra = i < remainder ? 1 : 0;
+        return {
+          ...ing,
+          percentage: basePercentage + extra
+        };
+      });
+
+      return {
+        ...prev,
+        ingredients: updatedList
+      };
+    });
+  };
+
+  const adjustPercentage = (idx: number, delta: number) => {
+    setFormData(prev => {
+      const list = prev.ingredients.map((ing, i) => {
+        if (i === idx) {
+          const newVal = Math.min(100, Math.max(0, ing.percentage + delta));
+          return { ...ing, percentage: newVal };
+        }
+        return ing;
+      });
+      return { ...prev, ingredients: list };
+    });
+  };
+
+  const updateIngredientCategory = (idx: number, category: string) => {
+    setFormData(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.map((ing, i) => i === idx ? { ...ing, carbonCategory: category } : ing)
+    }));
   };
 
   // --- Variant Logic ---
@@ -183,35 +383,32 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
       )
     }));
   };
-  // ---------------------
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name) {
-      alert("Nama produk wajib diisi.");
+      alert(t.validationName);
       return;
     }
-    
-    if (formData.menuType === "Surplus" && !formData.expiryDate) {
-      alert("Tanggal Kedaluwarsa wajib diisi untuk menu Surplus.");
+
+    const totalPct = formData.ingredients.reduce((sum, ing) => sum + ing.percentage, 0);
+    if (totalPct !== 100) {
+      alert(`${t.validationPercentage}${totalPct}%`);
       return;
     }
-    
-    const expiryISO = formData.expiryDate ? new Date(formData.expiryDate).toISOString() : undefined;
 
     const productData: any = {
       ...formData,
-      expiryDate: expiryISO,
       imageUrl: formData.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80"
     };
 
-    if (formData.menuType === "Reguler") {
-      productData.surplusPrice = formData.originalPrice; // Same price for reguler
-    }
-
     if (productToEdit) {
+      productData.batches = productToEdit.batches || [];
+      productData.quantity = productToEdit.quantity || 0;
       updateProduct(productToEdit.id, productData);
     } else {
+      productData.batches = [];
+      productData.quantity = 0;
       addProduct(productData);
     }
     
@@ -220,10 +417,10 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="p-6 border-b flex items-center justify-between shrink-0">
           <h2 className="text-xl font-bold text-gray-900">
-            {productToEdit ? "Edit Produk" : "Tambah Produk Baru"}
+            {productToEdit ? t.editTitle : t.addTitle}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,10 +432,10 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
         <div className="p-6 overflow-y-auto flex-1">
           <form id="productForm" onSubmit={handleSubmit} className="space-y-8">
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Image & Type Column */}
+              {/* Image & Category Selection */}
               <div className="w-full md:w-1/3 space-y-4">
-                <Label>Gambar Produk</Label>
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden">
+                <Label>{t.imgLabel}</Label>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden">
                   {formData.imageUrl ? (
                     <img src={formData.imageUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
@@ -246,29 +443,31 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
                       <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
                         <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
-                      <p className="mt-1 text-xs text-gray-500">Klik untuk upload</p>
+                      <p className="mt-1 text-xs text-gray-500">{t.uploadPlaceholder}</p>
                     </div>
                   )}
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 </div>
 
-                <div className="space-y-2 pt-2">
-                  <Label>Tipe Menu</Label>
-                  <select 
-                    name="menuType" 
-                    value={formData.menuType} 
+                <div className="space-y-2">
+                  <Label htmlFor="category">{t.catLabel}</Label>
+                  <select
+                    id="category"
+                    name="category"
+                    value={formData.category}
                     onChange={handleChange}
-                    className="flex h-10 w-full items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-950 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex h-10 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-950"
                   >
-                    <option value="Surplus">Menu Surplus (Diskon Sisa)</option>
-                    <option value="Reguler">Menu Reguler (Normal)</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
                   </select>
                 </div>
 
-                <div className="flex items-center justify-between border rounded-lg p-4 bg-resurva-green-muted/30">
+                <div className="flex items-center justify-between border rounded-xl p-4 bg-resurva-green-muted/30">
                   <div className="space-y-0.5">
-                    <Label className="text-sm font-semibold">Tampil di Marketplace</Label>
-                    <p className="text-xs text-slate-500">Aktifkan agar user dapat melihat menu ini</p>
+                    <Label className="text-sm font-semibold">{t.publishLabel}</Label>
+                    <p className="text-[10px] text-slate-500">{t.publishDesc}</p>
                   </div>
                   <Switch checked={formData.isPublished} onCheckedChange={handleToggle} />
                 </div>
@@ -278,52 +477,91 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
               <div className="w-full md:w-2/3 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="name">Nama Produk</Label>
-                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+                    <Label htmlFor="name">{t.nameLabel}</Label>
+                    <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="rounded-xl border-slate-200" />
                   </div>
                   <div className="space-y-2 col-span-2">
-                    <Label htmlFor="description">Deskripsi Menu</Label>
-                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="Deskripsikan menu..." rows={2} />
+                    <Label htmlFor="description">{t.descLabel}</Label>
+                    <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder={t.descPlaceholder} rows={2} className="rounded-xl border-slate-200" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="sku">SKU / Barcode</Label>
-                    <Input id="sku" name="sku" value={formData.sku} onChange={handleChange} placeholder="Contoh: BKR-001" />
+                    <Label htmlFor="sku">{t.skuLabel}</Label>
+                    <Input id="sku" name="sku" value={formData.sku} onChange={handleChange} placeholder="Contoh: BKR-001" className="rounded-xl border-slate-200" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="category">Kategori</Label>
-                    <Input id="category" name="category" value={formData.category} onChange={handleChange} />
+                    <Label htmlFor="weight">{t.weightLabel}</Label>
+                    <Input id="weight" name="weight" type="number" step="0.01" min={0.01} value={formData.weight} onChange={handleChange} className="rounded-xl border-slate-200" required />
                   </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="quantity">Stok Aktif</Label>
-                    <Input id="quantity" name="quantity" type="number" min={0} value={formData.quantity} onChange={handleChange} required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="minStock">Batas Minimum</Label>
-                    <Input id="minStock" name="minStock" type="number" min={0} value={formData.minStock} onChange={handleChange} />
-                  </div>
-                  {formData.menuType === "Surplus" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="expiryDate">Kedaluwarsa</Label>
-                      <Input id="expiryDate" name="expiryDate" type="datetime-local" value={formData.expiryDate} onChange={handleChange} required />
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="originalPrice">Harga Normal (Rp)</Label>
-                    <Input id="originalPrice" name="originalPrice" type="number" min={0} value={formData.originalPrice} onChange={handleChange} required />
+                    <Label htmlFor="originalPrice">{t.regPriceLabel}</Label>
+                    <Input id="originalPrice" name="originalPrice" type="number" min={0} value={formData.originalPrice} onChange={handleChange} required className="rounded-xl border-slate-200" />
                   </div>
-                  {formData.menuType === "Surplus" && (
-                    <div className="space-y-2">
-                      <Label htmlFor="surplusPrice">Harga Diskon (Rp)</Label>
-                      <Input id="surplusPrice" name="surplusPrice" type="number" min={0} value={formData.surplusPrice} onChange={handleChange} required />
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="surplusPrice">{t.surpPriceLabel}</Label>
+                    <Input id="surplusPrice" name="surplusPrice" type="number" min={0} value={formData.surplusPrice} onChange={handleChange} required className="rounded-xl border-slate-200" />
+                  </div>
                 </div>
+
+                {/* Carbon Ingredients Composition */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-sm">{t.ingredientsTitle}</h4>
+                      <p className="text-[10px] text-slate-500">{t.ingredientsDesc}</p>
+                    </div>
+                    <Button type="button" onClick={addIngredient} variant="outline" size="sm" className="text-resurva-dark border-resurva-dark rounded-xl">
+                      <Plus className="w-3.5 h-3.5 mr-1" /> {t.addIngredientBtn}
+                    </Button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {formData.ingredients.map((ing, idx) => (
+                      <div key={idx} className="flex gap-2 items-center bg-slate-50 p-3 border rounded-xl">
+                        <select
+                          value={ing.carbonCategory}
+                          onChange={(e) => updateIngredientCategory(idx, e.target.value)}
+                          className="flex-1 h-9 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs"
+                        >
+                          {CARBON_CATEGORIES.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
+                        
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => adjustPercentage(idx, -10)}
+                            className="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs"
+                          >
+                            -
+                          </button>
+                          <span className="text-xs font-bold text-slate-700 w-12 text-center">
+                            {ing.percentage}%
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => adjustPercentage(idx, 10)}
+                            className="w-8 h-8 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => removeIngredient(idx)}
+                          className="text-slate-400 hover:text-red-500 px-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -331,47 +569,49 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
             <div className="border-t pt-6">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h3 className="font-bold text-slate-800">Varian & Opsi Tambahan</h3>
-                  <p className="text-sm text-slate-500">Contoh: Level Pedas, Pilihan Topping, Ukuran Gelas.</p>
+                  <h3 className="font-bold text-slate-800">{t.variantsTitle}</h3>
+                  <p className="text-xs text-slate-500">{t.variantsDesc}</p>
                 </div>
-                <Button type="button" onClick={addVariantGroup} variant="outline" className="text-resurva-dark border-resurva-dark">
+                <Button type="button" onClick={addVariantGroup} variant="outline" className="text-resurva-dark border-resurva-dark rounded-xl">
                   <Plus className="w-4 h-4 mr-2" />
-                  Tambah Grup Varian
+                  {t.addVariantBtn}
                 </Button>
               </div>
 
               <div className="space-y-4">
-                {formData.variantGroups.map((vg, vgIndex) => (
-                  <div key={vg.id} className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                {formData.variantGroups.map((vg) => (
+                  <div key={vg.id} className="border border-slate-200 rounded-xl p-4 bg-slate-50">
                     <div className="flex items-start justify-between gap-4 mb-4">
                       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1">
-                          <Label>Nama Grup Varian</Label>
+                          <Label>{t.varNameLabel}</Label>
                           <Input 
                             value={vg.name} 
                             onChange={(e) => updateVariantGroup(vg.id, "name", e.target.value)} 
                             placeholder="Contoh: Level Pedas" 
                             required
+                            className="rounded-lg h-9"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label>Wajib Dipilih?</Label>
+                          <Label>{t.requiredLabel}</Label>
                           <select 
                             value={vg.isRequired ? "true" : "false"} 
                             onChange={(e) => updateVariantGroup(vg.id, "isRequired", e.target.value === "true")}
-                            className="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none"
+                            className="flex h-9 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none"
                           >
-                            <option value="true">Ya, Wajib (Required)</option>
-                            <option value="false">Tidak (Optional)</option>
+                            <option value="true">{t.requiredYes}</option>
+                            <option value="false">{t.requiredNo}</option>
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <Label>Maksimal Pilihan</Label>
+                          <Label>{t.maxSelection}</Label>
                           <Input 
                             type="number" 
                             min={1} 
                             value={vg.maxSelections} 
                             onChange={(e) => updateVariantGroup(vg.id, "maxSelections", Number(e.target.value))} 
+                            className="rounded-lg h-9"
                           />
                         </div>
                       </div>
@@ -381,21 +621,21 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
                     </div>
                     
                     <div className="pl-4 border-l-2 border-slate-200 space-y-3">
-                      <Label className="text-slate-500">Daftar Pilihan:</Label>
+                      <Label className="text-slate-500 text-xs">{t.optionsLabel}</Label>
                       {vg.options.map((opt) => (
                         <div key={opt.id} className="flex gap-3 items-center">
                           <Input 
-                            className="flex-1"
+                            className="flex-1 rounded-lg h-8"
                             value={opt.name} 
                             onChange={(e) => updateVariantOption(vg.id, opt.id, "name", e.target.value)} 
                             placeholder="Nama Pilihan (contoh: Ekstra Keju)" 
                             required
                           />
                           <div className="relative w-32">
-                            <span className="absolute left-3 top-2.5 text-slate-500 text-sm">Rp</span>
+                            <span className="absolute left-3 top-2 text-slate-500 text-xs">Rp</span>
                             <Input 
                               type="number" 
-                              className="pl-8"
+                              className="pl-8 rounded-lg h-8"
                               value={opt.additionalPrice} 
                               onChange={(e) => updateVariantOption(vg.id, opt.id, "additionalPrice", Number(e.target.value))} 
                             />
@@ -406,7 +646,7 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
                         </div>
                       ))}
                       <Button type="button" variant="ghost" size="sm" onClick={() => addVariantOption(vg.id)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 mt-2">
-                        <Plus className="w-4 h-4 mr-1" /> Tambah Pilihan
+                        <Plus className="w-4 h-4 mr-1" /> {t.addOptionBtn}
                       </Button>
                     </div>
                   </div>
@@ -414,15 +654,23 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
               </div>
             </div>
 
+            {/* Info Notice Box about Stock Batch Management */}
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl flex items-start gap-2.5">
+              <Info className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 leading-relaxed font-semibold">
+                {t.stockNotice}
+              </p>
+            </div>
+
           </form>
         </div>
 
-        <div className="p-6 border-t flex justify-end gap-3 shrink-0 bg-slate-50 rounded-b-xl">
-          <Button type="button" variant="outline" onClick={onClose}>
-            Batal
+        <div className="p-6 border-t flex justify-end gap-3 shrink-0 bg-slate-50 rounded-b-2xl">
+          <Button type="button" variant="outline" className="rounded-xl" onClick={onClose}>
+            {t.cancelBtn}
           </Button>
-          <Button type="submit" form="productForm" className="bg-resurva-dark hover:bg-resurva-dark-light text-white">
-            {productToEdit ? "Simpan Perubahan" : "Simpan Produk"}
+          <Button type="submit" form="productForm" className="bg-resurva-dark hover:bg-resurva-dark-light text-white rounded-xl">
+            {productToEdit ? t.saveChangesBtn : t.saveBtn}
           </Button>
         </div>
       </div>

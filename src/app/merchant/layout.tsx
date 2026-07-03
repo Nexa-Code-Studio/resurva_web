@@ -12,18 +12,47 @@ const merchantProfile: ProfileInfo = {
   initials: "UM",
 };
 
-const titleMapping = {
-  "/merchant": "Dashboard",
-  "/merchant/pos": "Kasir / Point of Sale",
-  "/merchant/analytics": "Analitik Toko",
-  "/merchant/inventory": "Manajemen Inventaris",
-  "/merchant/orders": "Pesanan & Logistik",
-};
-
 function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
   const { orders } = useMerchantContext();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [lang, setLang] = useState<"en" | "id">("en");
+
+  // Load language preference from localStorage
+  useEffect(() => {
+    const savedLang = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
+    if (savedLang) {
+      setLang(savedLang);
+    } else {
+      const systemLang = navigator.language.startsWith("id") ? "id" : "en";
+      setLang(systemLang);
+    }
+
+    const handleLangChange = () => {
+      const currentSaved = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
+      if (currentSaved) {
+        setLang(currentSaved);
+      }
+    };
+    window.addEventListener("languageChange", handleLangChange);
+    return () => window.removeEventListener("languageChange", handleLangChange);
+  }, []);
+
+  const titleMapping = lang === "en" ? {
+    "/merchant": "Dashboard",
+    "/merchant/pos": "Cashier / Point of Sale",
+    "/merchant/analytics": "Store Analytics",
+    "/merchant/inventory": "Inventory Management",
+    "/merchant/orders": "Orders & Logistics",
+    "/merchant/profile": "Store Profile",
+  } : {
+    "/merchant": "Dasbor",
+    "/merchant/pos": "Kasir / Point of Sale",
+    "/merchant/analytics": "Analitik Toko",
+    "/merchant/inventory": "Manajemen Inventaris",
+    "/merchant/orders": "Pesanan & Logistik",
+    "/merchant/profile": "Profil Toko",
+  };
 
   // Open/close sidebar based on initial screen size
   useEffect(() => {
@@ -41,8 +70,19 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
 
   const newOrdersCount = orders.filter(o => o.status === "Menunggu Konfirmasi").length;
 
-  const menus: MenuItem[] = [
+  const menus: MenuItem[] = lang === "en" ? [
     { name: "Dashboard", href: "/merchant" },
+    { name: "Cashier (POS)", href: "/merchant/pos" },
+    { name: "Store Analytics", href: "/merchant/analytics" },
+    { name: "Inventory", href: "/merchant/inventory" },
+    { 
+      name: "Orders", 
+      href: "/merchant/orders",
+      badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
+    },
+    { name: "Store Profile", href: "/merchant/profile" },
+  ] : [
+    { name: "Dasbor", href: "/merchant" },
     { name: "Kasir (POS)", href: "/merchant/pos" },
     { name: "Analitik Toko", href: "/merchant/analytics" },
     { name: "Inventaris", href: "/merchant/inventory" },
@@ -51,6 +91,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
       href: "/merchant/orders",
       badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
     },
+    { name: "Profil Toko", href: "/merchant/profile" },
   ];
 
   return (

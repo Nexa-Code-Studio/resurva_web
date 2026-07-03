@@ -4,12 +4,36 @@ import React, { useState, useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Bell, Package, AlertTriangle, Truck, Menu } from "lucide-react";
 
-// Mock Data Notifikasi
-const mockNotifications = [
-  { id: 1, type: "flash-sale", title: "Produk Mendekati Kedaluwarsa", message: "Roti Cokelat sisa 12 jam, masuk kategori Flash Sale.", time: "Baru saja", icon: AlertTriangle, color: "text-red-500 bg-red-100" },
-  { id: 2, type: "order", title: "Pesanan Baru Masuk", message: "Budi Santoso memesan 2x Roti Cokelat (ORD-001).", time: "5 mnt lalu", icon: Package, color: "text-blue-500 bg-blue-100" },
-  { id: 3, type: "courier", title: "Kurir Menuju Outlet", message: "Kurir Biteship sedang menuju ke outlet Anda untuk ORD-002.", time: "15 mnt lalu", icon: Truck, color: "text-purple-500 bg-purple-100" }
-];
+const TRANSLATIONS = {
+  en: {
+    notificationsTitle: "Notifications",
+    newBadge: "New",
+    markAllRead: "Mark all as read",
+    notif1Title: "Product Nearing Expiry",
+    notif1Msg: "Chocolate Bread has 12 hrs left, categorised as Flash Sale.",
+    notif1Time: "Just now",
+    notif2Title: "New Order Received",
+    notif2Msg: "Budi Santoso ordered 2x Chocolate Bread (ORD-001).",
+    notif2Time: "5 mins ago",
+    notif3Title: "Courier Heading to Outlet",
+    notif3Msg: "Biteship courier is heading to your outlet for ORD-002.",
+    notif3Time: "15 mins ago",
+  },
+  id: {
+    notificationsTitle: "Notifikasi",
+    newBadge: "Baru",
+    markAllRead: "Tandai semua sudah dibaca",
+    notif1Title: "Produk Mendekati Kedaluwarsa",
+    notif1Msg: "Roti Cokelat sisa 12 jam, masuk kategori Flash Sale.",
+    notif1Time: "Baru saja",
+    notif2Title: "Pesanan Baru Masuk",
+    notif2Msg: "Budi Santoso memesan 2x Roti Cokelat (ORD-001).",
+    notif2Time: "5 mnt lalu",
+    notif3Title: "Kurir Menuju Outlet",
+    notif3Msg: "Kurir Biteship sedang menuju ke outlet Anda untuk ORD-002.",
+    notif3Time: "15 mnt lalu",
+  }
+};
 
 interface SharedHeaderProps {
   pageTitleMapping: Record<string, string>;
@@ -20,7 +44,6 @@ interface SharedHeaderProps {
 export function SharedHeader({ pageTitleMapping, defaultTitle, onToggleSidebar }: SharedHeaderProps) {
   const pathname = usePathname();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(mockNotifications.length);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [lang, setLang] = useState<"en" | "id">("en");
 
@@ -54,6 +77,16 @@ export function SharedHeader({ pageTitleMapping, defaultTitle, onToggleSidebar }
     // Dispatch a custom event to notify other components (e.g. sidebar or page content)
     window.dispatchEvent(new Event("languageChange"));
   };
+
+  const t = TRANSLATIONS[lang];
+
+  const mockNotifications = [
+    { id: 1, type: "flash-sale", title: t.notif1Title, message: t.notif1Msg, time: t.notif1Time, icon: AlertTriangle, color: "text-red-500 bg-red-100" },
+    { id: 2, type: "order", title: t.notif2Title, message: t.notif2Msg, time: t.notif2Time, icon: Package, color: "text-blue-500 bg-blue-100" },
+    { id: 3, type: "courier", title: t.notif3Title, message: t.notif3Msg, time: t.notif3Time, icon: Truck, color: "text-purple-500 bg-purple-100" }
+  ];
+
+  const [unreadCount, setUnreadCount] = useState(mockNotifications.length);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -123,8 +156,8 @@ export function SharedHeader({ pageTitleMapping, defaultTitle, onToggleSidebar }
         {showNotifications && (
           <div className="absolute top-12 right-0 w-80 bg-white border border-slate-200 shadow-lg rounded-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Notifikasi</h3>
-              <span className="text-xs text-resurva-dark-light bg-resurva-green-muted px-2 py-1 rounded-full font-medium">Baru</span>
+              <h3 className="font-semibold text-slate-800">{t.notificationsTitle}</h3>
+              <span className="text-xs text-resurva-dark-light bg-resurva-green-muted px-2 py-1 rounded-full font-medium">{t.newBadge}</span>
             </div>
             <div className="max-h-80 overflow-y-auto">
               {mockNotifications.map((notif) => {
@@ -144,7 +177,7 @@ export function SharedHeader({ pageTitleMapping, defaultTitle, onToggleSidebar }
               })}
             </div>
             <div className="p-3 text-center border-t border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors">
-              <span className="text-sm text-resurva-dark-light font-medium">Tandai semua sudah dibaca</span>
+              <span className="text-sm text-resurva-dark-light font-medium">{t.markAllRead}</span>
             </div>
           </div>
         )}

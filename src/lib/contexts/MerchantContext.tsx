@@ -18,22 +18,34 @@ export interface VariantGroup {
   options: VariantOption[];
 }
 
+export interface ProductBatch {
+  id: string;
+  qty: number;
+  menuType: "Surplus" | "Reguler";
+  expiryDate?: string; // ISO String
+}
+
+export interface ProductIngredient {
+  carbonCategory: string;
+  percentage: number;
+}
+
 export interface Product {
   id: string;
   name: string;
   description?: string;
   sku?: string;
   category: string;
-  quantity: number;
+  quantity: number; // calculated total active stock
+  weight: number; // estimated weight per product in kg (for carbon calculations)
   minStock?: number;
   originalPrice: number;
   surplusPrice: number;
-  expiryDate?: string; // ISO string e.g. "2026-06-15" (Optional for Reguler)
-  status?: ProductStatus;
   imageUrl?: string;
   isPublished?: boolean;
-  menuType?: "Surplus" | "Reguler";
   variantGroups?: VariantGroup[];
+  batches?: ProductBatch[];
+  ingredients?: ProductIngredient[]; // Multi-ingredient composition with automatic/manual split logic
 }
 
 export type OrderStatus = "Menunggu Konfirmasi" | "Disiapkan" | "Siap Diambil" | "Selesai" | "Dibatalkan";
@@ -60,11 +72,16 @@ interface MerchantContextProps {
   orders: Order[];
   addOrder: (order: Omit<Order, "id">) => void;
   updateOrderStatus: (id: string, status: OrderStatus) => void;
+  categories: string[];
+  addCategory: (name: string) => void;
+  updateCategory: (oldName: string, newName: string) => void;
+  deleteCategory: (name: string) => void;
 }
 
 const MerchantContext = createContext<MerchantContextProps | undefined>(undefined);
 
 export function MerchantProvider({ children }: { children: ReactNode }) {
+  const [categories, setCategories] = useState<string[]>(["Bakery", "Makanan Berat", "Minuman"]);
   const [products, setProducts] = useState<Product[]>([
     {
       id: "prod-1",
@@ -73,14 +90,20 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
       sku: "BKR-001",
       category: "Bakery",
       quantity: 10,
+      weight: 0.15,
       minStock: 15,
       originalPrice: 15000,
       surplusPrice: 7500,
-      expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(), // 12 hours from now (Flash Sale)
       isPublished: true,
-      menuType: "Surplus",
-      variantGroups: [],
       imageUrl: "https://images.unsplash.com/photo-1598373182133-52452f7691ef?auto=format&fit=crop&w=200&q=80",
+      batches: [
+        { id: "batch-101", qty: 6, menuType: "Surplus", expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString() }, // 12 hours from now
+        { id: "batch-102", qty: 4, menuType: "Reguler" }
+      ],
+      ingredients: [
+        { carbonCategory: "Wheat & Rye (Bread)", percentage: 100 }
+      ],
+      variantGroups: []
     },
     {
       id: "prod-2",
@@ -89,12 +112,20 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
       sku: "MNB-002",
       category: "Makanan Berat",
       quantity: 5,
+      weight: 0.35,
       minStock: 10,
       originalPrice: 25000,
       surplusPrice: 15000,
-      expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days from now (Surplus)
       isPublished: true,
-      menuType: "Surplus",
+      imageUrl: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=200&q=80",
+      batches: [
+        { id: "batch-201", qty: 3, menuType: "Surplus", expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 2).toISOString() }, // 2 days
+        { id: "batch-202", qty: 2, menuType: "Reguler" }
+      ],
+      ingredients: [
+        { carbonCategory: "Poultry Meat (Ayam/Unggas)", percentage: 60 },
+        { carbonCategory: "Rice (Flooded)", percentage: 40 }
+      ],
       variantGroups: [
         {
           id: "vg-1",
@@ -107,8 +138,7 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
             { id: "opt-3", name: "Sangat Pedas", additionalPrice: 2000 },
           ]
         }
-      ],
-      imageUrl: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=200&q=80",
+      ]
     },
     {
       id: "prod-3",
@@ -117,14 +147,20 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
       sku: "MNM-003",
       category: "Minuman",
       quantity: 20,
+      weight: 0.25,
       minStock: 10,
       originalPrice: 20000,
       surplusPrice: 10000,
-      expiryDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 days from now (Aman)
-      isPublished: false,
-      menuType: "Reguler",
-      variantGroups: [],
+      isPublished: true,
       imageUrl: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?auto=format&fit=crop&w=200&q=80",
+      batches: [
+        { id: "batch-301", qty: 20, menuType: "Reguler" }
+      ],
+      ingredients: [
+        { carbonCategory: "Coffee", percentage: 80 },
+        { carbonCategory: "Milk (Cow)", percentage: 20 }
+      ],
+      variantGroups: []
     },
   ]);
 
@@ -238,8 +274,27 @@ export function MerchantProvider({ children }: { children: ReactNode }) {
     setOrders(prev => prev.map(o => o.id === id ? { ...o, status } : o));
   };
 
+  const addCategory = (name: string) => {
+    if (!categories.includes(name)) {
+      setCategories(prev => [...prev, name]);
+    }
+  };
+
+  const updateCategory = (oldName: string, newName: string) => {
+    setCategories(prev => prev.map(cat => cat === oldName ? newName : cat));
+    setProducts(prev => prev.map(prod => prod.category === oldName ? { ...prod, category: newName } : prod));
+  };
+
+  const deleteCategory = (name: string) => {
+    setCategories(prev => prev.filter(cat => cat !== name));
+  };
+
   return (
-    <MerchantContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, orders, addOrder, updateOrderStatus }}>
+    <MerchantContext.Provider value={{ 
+      products, addProduct, updateProduct, deleteProduct, 
+      orders, addOrder, updateOrderStatus,
+      categories, addCategory, updateCategory, deleteCategory
+    }}>
       {children}
     </MerchantContext.Provider>
   );
