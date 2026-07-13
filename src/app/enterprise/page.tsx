@@ -22,54 +22,62 @@ export default function EnterprisePage() {
 
       {/* Top Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Total Pendapatan</CardTitle>
-            <DollarSign className="h-4 w-4 text-emerald-500" />
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-emerald-50/50 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-emerald-500" />
+              Total Pendapatan
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">Rp 124.500.000</div>
-            <p className="text-xs text-emerald-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" /> +12% dari bulan lalu
+            <div className="text-2xl font-black text-slate-900">Rp 124.500.000</div>
+            <p className="text-xs text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> +12% dari bulan lalu
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Total Mitra Aktif</CardTitle>
-            <Users className="h-4 w-4 text-indigo-500" />
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-indigo-50/50 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Users className="w-4 h-4 text-indigo-500" />
+              Total Mitra Aktif
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">42 Cabang</div>
-            <p className="text-xs text-indigo-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" /> +3 mitra baru bulan ini
+            <div className="text-2xl font-black text-slate-900">42 Cabang</div>
+            <p className="text-xs text-indigo-600 mt-1 font-semibold flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> +3 mitra baru bulan ini
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Produk Surplus Hari Ini</CardTitle>
-            <Package className="h-4 w-4 text-amber-500" />
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-amber-50/50 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Package className="w-4 h-4 text-amber-500" />
+              Produk Surplus Hari Ini
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">128 SKU</div>
-            <p className="text-xs text-amber-600 mt-1">
+            <div className="text-2xl font-black text-slate-900">128 SKU</div>
+            <p className="text-xs text-slate-500 mt-1">
               Dari 15 cabang berbeda
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500">Konversi Penjualan</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-blue-50/50 to-white">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-blue-500" />
+              Konversi Penjualan
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-slate-900">68.5%</div>
-            <p className="text-xs text-blue-600 mt-1 flex items-center">
-              <TrendingUp className="h-3 w-3 mr-1" /> +2.4% dari minggu lalu
+            <div className="text-2xl font-black text-slate-900">68.5%</div>
+            <p className="text-xs text-blue-600 mt-1 font-semibold flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" /> +2.4% dari minggu lalu
             </p>
           </CardContent>
         </Card>

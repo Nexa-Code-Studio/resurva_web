@@ -245,27 +245,6 @@ export default function EnterpriseProfilePage() {
         </div>
       </Card>
 
-      {/* Platform Stats */}
-      <div className="pt-4">
-        <h3 className="text-lg font-bold text-slate-800 mb-4">Statistik Platform</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { icon: "🤝", label: "Total Mitra Aktif", value: "4" },
-            { icon: "🍱", label: "Makanan Diselamatkan", value: "1.860 Kg" },
-            { icon: "💚", label: "Emisi Tereduksi", value: "10.600 Kg CO₂e" },
-            { icon: "💰", label: "Pendapatan Platform", value: "Rp 24,6Jt" },
-          ].map(s => (
-            <Card key={s.label} className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="text-3xl mb-3">{s.icon}</div>
-                <div className="text-2xl font-black text-slate-900">{s.value}</div>
-                <div className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">{s.label}</div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
       {editing && renderEditModal()}
     </div>
   );
