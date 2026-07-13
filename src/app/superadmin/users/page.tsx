@@ -57,51 +57,55 @@ export default function UsersManagementPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Manajemen Pengguna</h1>
+          <p className="text-slate-500 mt-1">Kelola akses, perbarui informasi, dan pantau seluruh pengguna aplikasi.</p>
+        </div>
+        <button 
+          onClick={() => handleOpenModal()}
+          className="bg-resurva-dark hover:bg-resurva-dark-light text-white px-4 py-2.5 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer self-end sm:self-center shadow-sm"
+        >
+          <Plus className="w-4 h-4" /> Tambah Pengguna
+        </button>
+      </div>
+
       <Card className="border-slate-200/60 shadow-sm bg-white">
         <CardHeader className="border-b border-slate-50 pb-4">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2 shrink-0">
               <Shield className="w-5 h-5 text-resurva-dark" />
               Daftar Pengguna Aplikasi
             </CardTitle>
             
-            <div className="flex flex-col items-end gap-3 w-full lg:w-auto">
-              <button 
-                onClick={() => handleOpenModal()}
-                className="bg-resurva-dark hover:bg-resurva-dark-light text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors cursor-pointer self-end shadow-sm"
-              >
-                <Plus className="w-4 h-4" /> Tambah Pengguna
-              </button>
-
-              <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center w-full lg:w-auto">
-                <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
-                  <input 
-                    type="text" 
-                    placeholder="Cari nama atau email..." 
-                    className="pl-9 w-full h-10 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-resurva-dark transition-colors"
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                  />
-                </div>
-                <div className="flex bg-slate-100 p-1 rounded-lg shrink-0 w-full sm:w-auto justify-center sm:justify-start">
-                  <button
-                    onClick={() => setRoleFilter("all")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "all" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >Semua</button>
-                  <button
-                    onClick={() => setRoleFilter("merchant")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "merchant" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >Merchant</button>
-                  <button
-                    onClick={() => setRoleFilter("enterprise")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "enterprise" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >Enterprise</button>
-                  <button
-                    onClick={() => setRoleFilter("customer")}
-                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "customer" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                  >Customer</button>
-                </div>
+            <div className="flex flex-col sm:flex-row gap-3 items-center w-full sm:w-auto">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Cari nama atau email..." 
+                  className="pl-9 w-full h-10 border border-slate-200 rounded-lg text-sm bg-slate-50 focus:bg-white focus:outline-none focus:border-resurva-dark transition-colors"
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                />
+              </div>
+              <div className="flex bg-slate-100 p-1 rounded-lg shrink-0 w-full sm:w-auto justify-center sm:justify-start">
+                <button
+                  onClick={() => setRoleFilter("all")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "all" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >Semua</button>
+                <button
+                  onClick={() => setRoleFilter("merchant")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "merchant" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >Merchant</button>
+                <button
+                  onClick={() => setRoleFilter("enterprise")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "enterprise" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >Enterprise</button>
+                <button
+                  onClick={() => setRoleFilter("customer")}
+                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all cursor-pointer ${roleFilter === "customer" ? "bg-white text-resurva-dark-light shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                >Customer</button>
               </div>
             </div>
           </div>
