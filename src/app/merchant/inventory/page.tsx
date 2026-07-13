@@ -288,7 +288,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto no-scrollbar w-max mb-6">
         {[
           { key: "Surplus", label: t.tabSurplus, icon: Layers },
           { key: "Reguler", label: t.tabReguler, icon: FileDown },
@@ -299,10 +299,11 @@ export default function InventoryPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === tab.key
-                ? "border-resurva-dark text-resurva-dark"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === tab.key 
+                  ? "bg-resurva-dark text-white shadow-md" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
             >
               <Icon className="w-4 h-4" />
               {tab.label}

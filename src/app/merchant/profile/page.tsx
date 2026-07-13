@@ -196,217 +196,227 @@ export default function MerchantProfilePage() {
         <h2 className="text-2xl font-bold tracking-tight text-slate-800">{t.title}</h2>
         <p className="text-slate-500 text-sm">{t.description}</p>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Settings Column */}
-        <form onSubmit={handleSave} className="space-y-6 lg:col-span-2">
-          {/* General Settings */}
-          <Card className="border-slate-200/60 shadow-sm bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+      <div className="max-w-4xl mx-auto">
+        <form onSubmit={handleSave}>
+          <Card className="border-slate-200/60 shadow-sm bg-white overflow-hidden">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 flex flex-row items-center justify-between py-4">
               <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Store className="w-5 h-5 text-resurva-dark" />
-                {t.generalSection}
+                Profil Toko
               </CardTitle>
+              <Button type="submit" className="bg-resurva-dark hover:bg-resurva-dark-light text-white rounded-xl shadow-sm px-6 font-bold flex items-center gap-2">
+                <Save className="w-4 h-4" />
+                {t.saveBtn}
+              </Button>
             </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="flex flex-col sm:flex-row gap-6">
-                {/* Media Upload Column */}
-                <div className="w-full sm:w-1/3 space-y-4">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-650">{t.logoLabel}</Label>
-                    <div className="border border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center h-36 bg-slate-50 relative overflow-hidden">
-                      {logoUrl ? (
-                        <img src={logoUrl} alt="Logo" className="w-20 h-20 rounded-full object-cover shadow-sm border border-slate-200" />
-                      ) : (
-                        <span className="text-[10px] text-slate-400">No image</span>
-                      )}
-                      <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-slate-650">{t.bannerLabel}</Label>
-                    <div className="border border-dashed border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center h-28 bg-slate-50 relative overflow-hidden">
-                      {bannerUrl ? (
-                        <img src={bannerUrl} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
-                      ) : (
-                        <span className="text-[10px] text-slate-400">{t.uploadPlaceholder}</span>
-                      )}
-                      <input type="file" accept="image/*" onChange={handleBannerUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* General Details Column */}
-                <div className="flex-1 space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <CardContent className="p-6 sm:p-8 space-y-10">
+              
+              {/* SECTION: General Settings */}
+              <section>
+                <h3 className="font-bold text-slate-700 border-b border-slate-100 pb-2 mb-6">{t.generalSection}</h3>
+                <div className="flex flex-col sm:flex-row gap-8">
+                  {/* Media Upload Column */}
+                  <div className="w-full sm:w-1/3 space-y-6">
                     <div className="space-y-1.5">
-                      <Label htmlFor="storeName">{t.storeName}</Label>
-                      <Input 
-                        id="storeName" 
-                        value={storeName} 
-                        onChange={(e) => setStoreName(e.target.value)} 
-                        className="rounded-xl border-slate-200"
-                        required 
+                      <Label className="text-sm font-bold text-slate-650">{t.logoLabel}</Label>
+                      <div className="border border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center h-40 bg-slate-50 hover:bg-slate-100 transition-colors relative overflow-hidden group">
+                        {logoUrl ? (
+                          <img src={logoUrl} alt="Logo" className="w-24 h-24 rounded-full object-cover shadow-sm border border-slate-200" />
+                        ) : (
+                          <div className="text-center">
+                            <Store className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                            <span className="text-[10px] text-slate-400">Upload Logo</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-bold text-slate-650">{t.bannerLabel}</Label>
+                      <div className="border border-dashed border-slate-300 rounded-xl p-4 flex flex-col items-center justify-center h-32 bg-slate-50 hover:bg-slate-100 transition-colors relative overflow-hidden group">
+                        {bannerUrl ? (
+                          <img src={bannerUrl} alt="Banner" className="absolute inset-0 w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center">
+                            <span className="text-[10px] text-slate-400">{t.uploadPlaceholder}</span>
+                          </div>
+                        )}
+                        <input type="file" accept="image/*" onChange={handleBannerUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* General Details Column */}
+                  <div className="flex-1 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                      <div className="space-y-2">
+                        <Label htmlFor="storeName">{t.storeName}</Label>
+                        <Input 
+                          id="storeName" 
+                          value={storeName} 
+                          onChange={(e) => setStoreName(e.target.value)} 
+                          className="rounded-xl border-slate-200"
+                          required 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="storeCategory">{t.storeCategory}</Label>
+                        <Input 
+                          id="storeCategory" 
+                          value={category} 
+                          onChange={(e) => setCategory(e.target.value)} 
+                          className="rounded-xl border-slate-200"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="storeDesc">{t.storeDesc}</Label>
+                      <Textarea 
+                        id="storeDesc" 
+                        value={description} 
+                        onChange={(e) => setDescription(e.target.value)} 
+                        rows={3} 
+                        className="rounded-xl border-slate-200 resize-none"
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="storeCategory">{t.storeCategory}</Label>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="storeAddress" className="flex items-center gap-1">
+                        <MapPin className="w-4 h-4 text-slate-400" />
+                        {t.storeAddress}
+                      </Label>
                       <Input 
-                        id="storeCategory" 
-                        value={category} 
-                        onChange={(e) => setCategory(e.target.value)} 
+                        id="storeAddress" 
+                        value={address} 
+                        onChange={(e) => setAddress(e.target.value)} 
                         className="rounded-xl border-slate-200"
                       />
                     </div>
                   </div>
+                </div>
+              </section>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="storeDesc">{t.storeDesc}</Label>
-                    <Textarea 
-                      id="storeDesc" 
-                      value={description} 
-                      onChange={(e) => setDescription(e.target.value)} 
-                      rows={2} 
-                      className="rounded-xl border-slate-200"
-                    />
+              {/* SECTION: Operating Hours Settings */}
+              <section>
+                <h3 className="font-bold text-slate-700 border-b border-slate-100 pb-2 mb-6 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-slate-400" />
+                  {t.operationSection}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="openTime">{t.openingHours}</Label>
+                        <Input 
+                          id="openTime" 
+                          type="time" 
+                          value={openTime} 
+                          onChange={(e) => setOpenTime(e.target.value)} 
+                          className="rounded-xl border-slate-200"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="closeTime">{t.closingHours}</Label>
+                        <Input 
+                          id="closeTime" 
+                          type="time" 
+                          value={closeTime} 
+                          onChange={(e) => setCloseTime(e.target.value)} 
+                          className="rounded-xl border-slate-200"
+                        />
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="storeAddress" className="flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      {t.storeAddress}
-                    </Label>
-                    <Input 
-                      id="storeAddress" 
-                      value={address} 
-                      onChange={(e) => setAddress(e.target.value)} 
-                      className="rounded-xl border-slate-200"
-                    />
+                  <div className="flex flex-col justify-center">
+                    <div className="flex items-center justify-between border border-slate-200 rounded-xl p-5 bg-slate-50/50 shadow-sm">
+                      <div className="space-y-1 max-w-[75%]">
+                        <Label className="text-sm font-bold text-slate-800">{t.isOpenLabel}</Label>
+                        <p className="text-xs text-slate-500 leading-relaxed">{t.isOpenDesc}</p>
+                      </div>
+                      <Switch checked={isOpenForOrders} onCheckedChange={setIsOpenForOrders} />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </section>
+
+              {/* SECTION: Enterprise Status */}
+              <section>
+                <h3 className="font-bold text-slate-700 border-b border-slate-100 pb-2 mb-6 flex items-center gap-2">
+                  <Building2 className="w-4 h-4 text-slate-400" />
+                  {t.integrationSection}
+                </h3>
+                
+                <div className="w-full">
+                  {isBranchOfEnterprise ? (
+                    <div className="space-y-4 border border-resurva-dark/10 bg-resurva-green-muted/10 p-5 rounded-2xl">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-resurva-dark/10 flex items-center justify-center shrink-0">
+                          <Lock className="w-4 h-4 text-resurva-dark" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{t.enterpriseBranchLabel}</p>
+                          <p className="text-xs text-slate-500 mt-1">{t.lockedTooltip}</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4 border-t border-slate-200/60 pt-4 mt-2">
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.parentEnterpriseName}</span>
+                          <p className="text-sm font-semibold text-slate-800">{parentEnterpriseName}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.branchId}</span>
+                          <p className="text-sm font-semibold text-slate-850">{branchLocation}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="pt-2">
+                        <Button 
+                          type="button" 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 text-[10px] h-7 px-2"
+                          onClick={() => setIsBranchOfEnterprise(false)}
+                        >
+                          Demo: Reset to Standalone
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-5 border border-slate-200 p-5 rounded-2xl bg-white shadow-sm">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                          <Store className="w-4 h-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800">{t.standaloneLabel}</p>
+                          <p className="text-xs text-slate-500 mt-1">{t.standaloneDesc}</p>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-slate-100 pt-4 space-y-3">
+                        <h4 className="font-bold text-sm text-slate-800">{t.growTitle}</h4>
+                        <p className="text-xs text-slate-500">{t.growDesc}</p>
+                        <Button 
+                          type="button"
+                          onClick={() => setIsRegisterModalOpen(true)}
+                          className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold py-2 shadow-xs mt-2"
+                        >
+                          {t.registerEnterpriseBtn}
+                          <ArrowRight className="w-3.5 h-3.5 ml-2" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </section>
+
             </CardContent>
           </Card>
-
-          {/* Operating Hours Settings */}
-          <Card className="border-slate-200/60 shadow-sm bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-              <CardTitle className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-resurva-dark" />
-                {t.operationSection}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="openTime">{t.openingHours}</Label>
-                  <Input 
-                    id="openTime" 
-                    type="time" 
-                    value={openTime} 
-                    onChange={(e) => setOpenTime(e.target.value)} 
-                    className="rounded-xl border-slate-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="closeTime">{t.closingHours}</Label>
-                  <Input 
-                    id="closeTime" 
-                    type="time" 
-                    value={closeTime} 
-                    onChange={(e) => setCloseTime(e.target.value)} 
-                    className="rounded-xl border-slate-200"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between border border-slate-100 rounded-xl p-4 bg-slate-50/30">
-                <div className="space-y-0.5 max-w-[80%]">
-                  <Label className="text-sm font-semibold text-slate-800">{t.isOpenLabel}</Label>
-                  <p className="text-xs text-slate-500">{t.isOpenDesc}</p>
-                </div>
-                <Switch checked={isOpenForOrders} onCheckedChange={setIsOpenForOrders} />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Button */}
-          <div className="flex justify-end">
-            <Button type="submit" className="bg-resurva-dark hover:bg-resurva-dark-light text-white rounded-xl shadow-lg px-8 font-bold flex items-center gap-2">
-              <Save className="w-4 h-4" />
-              {t.saveBtn}
-            </Button>
-          </div>
         </form>
-
-        {/* Enterprise Status Sidecard */}
-        <div className="space-y-6">
-          <Card className="border-slate-200/60 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-              <CardTitle className="text-md font-bold text-slate-800 flex items-center gap-2">
-                <Building2 className="w-4.5 h-4.5 text-resurva-dark" />
-                {t.integrationSection}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-4">
-              {isBranchOfEnterprise ? (
-                /* Enterprise branch: read-only info */
-                <div className="space-y-4">
-                  <div className="p-3.5 bg-resurva-green-muted/20 border border-resurva-dark/25 rounded-xl flex items-start gap-2.5">
-                    <Lock className="w-4 h-4 text-resurva-dark mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-slate-800">{t.enterpriseBranchLabel}</p>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-normal">{t.lockedTooltip}</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 border-t pt-3">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.parentEnterpriseName}</span>
-                      <p className="text-sm font-semibold text-slate-800">{parentEnterpriseName}</p>
-                    </div>
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{t.branchId}</span>
-                      <p className="text-sm font-semibold text-slate-850">{branchLocation}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Simulate unlink for test demo */}
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-full text-slate-400 hover:text-slate-600 hover:bg-slate-50 text-[10px]"
-                    onClick={() => setIsBranchOfEnterprise(false)}
-                  >
-                    Demo: Reset to Standalone Store
-                  </Button>
-                </div>
-              ) : (
-                /* Standalone merchant: can register Enterprise scale-up */
-                <div className="space-y-4">
-                  <div className="p-3 bg-blue-50 border border-blue-150 rounded-xl">
-                    <p className="text-xs font-bold text-blue-800">{t.standaloneLabel}</p>
-                    <p className="text-[10px] text-blue-650 mt-1 leading-normal">{t.standaloneDesc}</p>
-                  </div>
-
-                  <div className="border-t pt-4 space-y-3">
-                    <h4 className="font-bold text-xs text-slate-800">{t.growTitle}</h4>
-                    <p className="text-[10px] text-slate-500 leading-normal">{t.growDesc}</p>
-                    <Button 
-                      onClick={() => setIsRegisterModalOpen(true)}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold py-2 shadow-xs flex items-center justify-center gap-1.5"
-                    >
-                      {t.registerEnterpriseBtn}
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
       </div>
 
       {/* Enterprise Registration Modal */}

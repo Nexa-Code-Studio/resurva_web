@@ -532,7 +532,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 print:hidden overflow-x-auto hide-scrollbar">
+      <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto no-scrollbar w-max mb-6 print:hidden">
         {([t.tabNew, t.tabOngoing, t.tabCompleted] as const).map(tab => {
           let count = 0;
           let activeTabKey: "Baru" | "Berlangsung" | "Selesai" = "Baru";
@@ -550,15 +550,15 @@ export default function OrdersPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(activeTabKey)}
-              className={`px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === activeTabKey 
-                  ? "border-resurva-dark text-resurva-dark" 
-                  : "border-transparent text-slate-500 hover:text-slate-700"
+                  ? "bg-resurva-dark text-white shadow-md" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
               }`}
             >
               {tab}
               {count > 0 && (
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === activeTabKey ? "bg-resurva-dark text-white" : "bg-slate-200 text-slate-600"}`}>
+                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${activeTab === activeTabKey ? "bg-white text-resurva-dark" : "bg-slate-200 text-slate-600"}`}>
                   {count}
                 </span>
               )}
