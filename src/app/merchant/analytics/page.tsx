@@ -630,52 +630,6 @@ export default function StoreAnalyticsPage() {
     </div>
   );
 
-  const renderAITab = () => (
-    <div className="space-y-6 animate-in fade-in duration-500">
-
-      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden flex flex-col" style={{ height: "500px" }}>
-        <div className="p-4 bg-resurva-dark text-white flex items-center gap-3">
-          <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <Bot className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-bold text-lg">{t.chatTitle}</h3>
-            <span className="text-xs text-emerald-200">Online Assistant</span>
-          </div>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-slate-50">
-          {messages.map((msg, index) => (
-            <div key={index} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} items-start gap-3`}>
-              {msg.sender === "ai" && (
-                <div className="w-8 h-8 rounded-full bg-emerald-100 text-resurva-dark flex items-center justify-center font-bold text-xs shrink-0">AI</div>
-              )}
-              <div className={`p-4 rounded-2xl max-w-[80%] text-sm leading-relaxed ${
-                msg.sender === "user" ? "bg-resurva-dark text-white rounded-tr-none" : "bg-white text-slate-800 shadow-sm border border-slate-200 rounded-tl-none"
-              }`}>
-                {msg.text}
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
-
-        <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-slate-200 flex gap-3">
-          <input 
-            type="text" 
-            className="flex-1 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-resurva-dark bg-slate-50 focus:bg-white"
-            placeholder={t.chatInputPlaceholder}
-            value={inputVal}
-            onChange={(e) => setInputVal(e.target.value)}
-          />
-          <button type="submit" className="bg-resurva-dark hover:bg-resurva-dark-light text-white p-3 px-6 rounded-xl font-bold flex items-center gap-2">
-            <Send className="w-4 h-4" /> {t.send}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-
   return (
     <div className="space-y-6 p-4 md:p-8 min-h-screen relative bg-slate-50">
       {/* Header */}
@@ -690,7 +644,7 @@ export default function StoreAnalyticsPage() {
       <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto no-scrollbar w-max">
         <button
           onClick={() => setActiveTab("finance")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === "finance" ? "bg-resurva-dark text-white shadow-md" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
@@ -698,19 +652,11 @@ export default function StoreAnalyticsPage() {
         </button>
         <button
           onClick={() => setActiveTab("sales")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
             activeTab === "sales" ? "bg-resurva-dark text-white shadow-md" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
           }`}
         >
           <PieChart className="w-4 h-4" /> {t.tabSales}
-        </button>
-        <button
-          onClick={() => setActiveTab("ai")}
-          className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap ${
-            activeTab === "ai" ? "bg-resurva-dark text-white shadow-md" : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
-          }`}
-        >
-          <Sparkles className="w-4 h-4" /> {t.tabAI}
         </button>
       </div>
 
@@ -718,7 +664,6 @@ export default function StoreAnalyticsPage() {
       <div className="mt-6">
         {activeTab === "finance" && renderFinanceTab()}
         {activeTab === "sales" && renderSalesTab()}
-        {activeTab === "ai" && renderAITab()}
       </div>
 
       {/* Add Transaction Modal */}
