@@ -6,7 +6,11 @@ import { SharedSidebar, MenuItem, ProfileInfo } from "@/components/layout/Shared
 import { SharedHeader } from "@/components/layout/SharedHeader";
 
 const superadminMenus: MenuItem[] = [
-  { name: "Manajemen Mitra", href: "/superadmin/partners" },
+  { name: "Dashboard", href: "/superadmin" },
+  { name: "Manajemen Pengguna", href: "/superadmin/users" },
+  { name: "Verifikasi Merchant", href: "/superadmin/verifications/merchant" },
+  { name: "Verifikasi Enterprise", href: "/superadmin/verifications/enterprise" },
+  { name: "Log Sistem", href: "/superadmin/logs" },
 ];
 
 const superadminProfile: ProfileInfo = {
@@ -16,7 +20,10 @@ const superadminProfile: ProfileInfo = {
 };
 
 const titleMapping = {
-  "/superadmin/partners": "Manajemen Mitra & Cabang",
+  "/superadmin/users": "Manajemen Pengguna Aplikasi",
+  "/superadmin/verifications/merchant": "Verifikasi Pendaftaran Merchant",
+  "/superadmin/verifications/enterprise": "Verifikasi Pendaftaran Enterprise",
+  "/superadmin/logs": "Riwayat Log Sistem",
   "/superadmin": "Superadmin Area",
 };
 
