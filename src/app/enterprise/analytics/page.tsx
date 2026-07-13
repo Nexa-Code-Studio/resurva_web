@@ -73,7 +73,17 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-800">Analitik Sampah & Dampak</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            Pantau perbandingan limbah makanan, emisi karbon tereduksi, dan penghematan finansial antar cabang.
+          </p>
+        </div>
+      </div>
+
       {/* Macro Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-l-4 border-l-green-500">
