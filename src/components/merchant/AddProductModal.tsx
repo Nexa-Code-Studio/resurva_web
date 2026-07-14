@@ -7,7 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, Plus, Info } from "lucide-react";
+import { Trash2, Plus, Info, Calendar } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
 interface AddProductModalProps {
   isOpen: boolean;
@@ -92,7 +93,15 @@ const TRANSLATIONS = {
     saveChangesBtn: "Save Changes",
     stockNotice: "Note: Stock is managed independently using the 'Stock' button on the product inventory row.",
     validationName: "Product name is required.",
-    validationPercentage: "Total composition percentage must sum to 100%. Current total: "
+    validationPercentage: "Total composition percentage must sum to 100%. Current total: ",
+    estimatedExpiryLabel: "Estimated Shelf Life",
+    autoSurplusLabel: "Automatic Surplus Trigger",
+    autoSurplusDesc: "Automatically trigger surplus pricing before expiry",
+    surplusTriggerLabel: "Surplus Trigger (Batas Mulai)",
+    years: "Years",
+    months: "Months",
+    days: "Days",
+    hours: "Hours",
   },
   id: {
     addTitle: "Tambah Produk Baru",
@@ -127,13 +136,28 @@ const TRANSLATIONS = {
     saveChangesBtn: "Simpan Perubahan",
     stockNotice: "Catatan: Stok dikelola secara mandiri melalui tombol 'Stok' di baris tabel produk.",
     validationName: "Nama produk wajib diisi.",
-    validationPercentage: "Total persentase kandungan harus 100%. Saat ini: "
+    validationPercentage: "Total persentase kandungan harus 100%. Saat ini: ",
+    estimatedExpiryLabel: "Estimasi Masa Kedaluwarsa",
+    autoSurplusLabel: "Pemicu Surplus Otomatis",
+    autoSurplusDesc: "Otomatis ubah harga menjadi surplus sebelum kedaluwarsa",
+    surplusTriggerLabel: "Pemicu Surplus (Batas Mulai)",
+    years: "Tahun",
+    months: "Bulan",
+    days: "Hari",
+    hours: "Jam",
   }
 };
 
 export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductModalProps) {
-  const { addProduct, updateProduct, categories } = useMerchantContext();
+  const { addProduct, updateProduct, categories, addBatch } = useMerchantContext();
   const [lang, setLang] = useState<"en" | "id">("en");
+
+  // Form states for initial stock and batch
+  const [initialStock, setInitialStock] = useState(0);
+  const [initialExpiry, setInitialExpiry] = useState("");
+  const [initialSurplusEnabled, setInitialSurplusEnabled] = useState(false);
+  const [initialSurplusDate, setInitialSurplusDate] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
   
   const [formData, setFormData] = useState<{
     name: string;
@@ -147,6 +171,9 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
     isPublished: boolean;
     variantGroups: VariantGroup[];
     ingredients: ProductIngredient[];
+    estimatedExpiryHours?: number;
+    autoSurplusEnabled?: boolean;
+    surplusTriggerHours?: number;
   }>({
     name: "",
     category: categories[0] || "Bakery",
@@ -161,7 +188,33 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
     ingredients: [
       { carbonCategory: CARBON_CATEGORIES[17], percentage: 100 } // Wheat & Rye default
     ],
+    estimatedExpiryHours: 0,
+    autoSurplusEnabled: false,
+    surplusTriggerHours: 0,
   });
+
+  // For estimated expiry input
+  const [expiryYears, setExpiryYears] = useState(0);
+  const [expiryMonths, setExpiryMonths] = useState(0);
+  const [expiryDays, setExpiryDays] = useState(0);
+  const [expiryHours, setExpiryHours] = useState(0);
+
+  // For surplus trigger input
+  const [triggerYears, setTriggerYears] = useState(0);
+  const [triggerMonths, setTriggerMonths] = useState(0);
+  const [triggerDays, setTriggerDays] = useState(0);
+  const [triggerHours, setTriggerHours] = useState(0);
+
+  const hoursToDuration = (totalHours: number) => {
+    let remaining = totalHours || 0;
+    const years = Math.floor(remaining / (365 * 24));
+    remaining %= (365 * 24);
+    const months = Math.floor(remaining / (30 * 24));
+    remaining %= (30 * 24);
+    const days = Math.floor(remaining / 24);
+    const hours = remaining % 24;
+    return { years, months, days, hours };
+  };
 
   useEffect(() => {
     const savedLang = localStorage.getItem("preferredLanguage") as "en" | "id" | null;
@@ -174,6 +227,18 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
 
   useEffect(() => {
     if (isOpen && productToEdit) {
+      const exp = hoursToDuration(productToEdit.estimatedExpiryHours || 0);
+      setExpiryYears(exp.years);
+      setExpiryMonths(exp.months);
+      setExpiryDays(exp.days);
+      setExpiryHours(exp.hours);
+
+      const trig = hoursToDuration(productToEdit.surplusTriggerHours || 0);
+      setTriggerYears(trig.years);
+      setTriggerMonths(trig.months);
+      setTriggerDays(trig.days);
+      setTriggerHours(trig.hours);
+
       setFormData({
         name: productToEdit.name || "",
         category: productToEdit.category || categories[0] || "Bakery",
@@ -188,8 +253,23 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
         ingredients: productToEdit.ingredients && productToEdit.ingredients.length > 0 
           ? JSON.parse(JSON.stringify(productToEdit.ingredients)) 
           : [{ carbonCategory: CARBON_CATEGORIES[17], percentage: 100 }],
+        estimatedExpiryHours: productToEdit.estimatedExpiryHours || 0,
+        autoSurplusEnabled: productToEdit.autoSurplusEnabled || false,
+        surplusTriggerHours: productToEdit.surplusTriggerHours || 0,
       });
     } else if (isOpen) {
+      setExpiryYears(0);
+      setExpiryMonths(0);
+      setExpiryDays(0);
+      setExpiryHours(0);
+      setTriggerYears(0);
+      setTriggerMonths(0);
+      setTriggerDays(0);
+      setTriggerHours(0);
+      setInitialStock(0);
+      setInitialExpiry("");
+      setInitialSurplusEnabled(false);
+      setInitialSurplusDate("");
       setFormData({
         name: "",
         category: categories[0] || "Bakery",
@@ -204,9 +284,56 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
         ingredients: [
           { carbonCategory: CARBON_CATEGORIES[17], percentage: 100 }
         ],
+        estimatedExpiryHours: 0,
+        autoSurplusEnabled: false,
+        surplusTriggerHours: 0,
       });
     }
   }, [isOpen, productToEdit, categories]);
+
+  // Auto-calculate initial expiry when stock is set and shelf life is filled
+  useEffect(() => {
+    if (initialStock > 0 && !initialExpiry) {
+      const totalExpHours = (expiryYears * 365 * 24) + (expiryMonths * 30 * 24) + (expiryDays * 24) + expiryHours;
+      if (totalExpHours > 0) {
+        const defaultExpiry = new Date(Date.now() + totalExpHours * 60 * 60 * 1000);
+        const yyyy = defaultExpiry.getFullYear();
+        const mm = String(defaultExpiry.getMonth() + 1).padStart(2, "0");
+        const dd = String(defaultExpiry.getDate()).padStart(2, "0");
+        const hh = String(defaultExpiry.getHours()).padStart(2, "0");
+        const min = String(defaultExpiry.getMinutes()).padStart(2, "0");
+        setInitialExpiry(`${yyyy}-${mm}-${dd}T${hh}:${min}`);
+
+        // Surplus triggers
+        const totalTrigHours = (triggerYears * 365 * 24) + (triggerMonths * 30 * 24) + (triggerDays * 24) + triggerHours;
+        if (formData.autoSurplusEnabled && totalTrigHours > 0) {
+          setInitialSurplusEnabled(true);
+          const surplusTime = new Date(defaultExpiry.getTime() - totalTrigHours * 60 * 60 * 1000);
+          const s_yyyy = surplusTime.getFullYear();
+          const s_mm = String(surplusTime.getMonth() + 1).padStart(2, "0");
+          const s_dd = String(surplusTime.getDate()).padStart(2, "0");
+          const s_hh = String(surplusTime.getHours()).padStart(2, "0");
+          const s_min = String(surplusTime.getMinutes()).padStart(2, "0");
+          setInitialSurplusDate(`${s_yyyy}-${s_mm}-${s_dd}T${s_hh}:${s_min}`);
+        }
+      }
+    }
+  }, [initialStock, expiryYears, expiryMonths, expiryDays, expiryHours, triggerYears, triggerMonths, triggerDays, triggerHours, formData.autoSurplusEnabled, initialExpiry]);
+
+  const handleInitialExpiryChange = (val: string) => {
+    setInitialExpiry(val);
+    const totalTrigHours = (triggerYears * 365 * 24) + (triggerMonths * 30 * 24) + (triggerDays * 24) + triggerHours;
+    if (val && formData.autoSurplusEnabled && totalTrigHours > 0) {
+      const expiryTime = new Date(val).getTime();
+      const surplusTime = new Date(expiryTime - totalTrigHours * 60 * 60 * 1000);
+      const s_yyyy = surplusTime.getFullYear();
+      const s_mm = String(surplusTime.getMonth() + 1).padStart(2, "0");
+      const s_dd = String(surplusTime.getDate()).padStart(2, "0");
+      const s_hh = String(surplusTime.getHours()).padStart(2, "0");
+      const s_min = String(surplusTime.getMinutes()).padStart(2, "0");
+      setInitialSurplusDate(`${s_yyyy}-${s_mm}-${s_dd}T${s_hh}:${s_min}`);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -225,10 +352,19 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
     setFormData((prev) => ({ ...prev, isPublished: checked }));
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const url = URL.createObjectURL(e.target.files[0]);
-      setFormData((prev) => ({ ...prev, imageUrl: url }));
+      const file = e.target.files[0];
+      setIsUploading(true);
+      try {
+        const res = await apiClient.uploadFile("/products/upload-image", file);
+        setFormData((prev) => ({ ...prev, imageUrl: res.access_url }));
+      } catch (err) {
+        console.error("Image upload failed:", err);
+        alert(lang === "en" ? "Image upload failed" : "Upload gambar gagal");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -397,8 +533,14 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
       return;
     }
 
+    const totalExpHours = (expiryYears * 365 * 24) + (expiryMonths * 30 * 24) + (expiryDays * 24) + expiryHours;
+    const totalTrigHours = (triggerYears * 365 * 24) + (triggerMonths * 30 * 24) + (triggerDays * 24) + triggerHours;
+
     const productData: any = {
       ...formData,
+      estimatedExpiryHours: totalExpHours,
+      autoSurplusEnabled: formData.autoSurplusEnabled,
+      surplusTriggerHours: formData.autoSurplusEnabled ? totalTrigHours : 0,
       imageUrl: formData.imageUrl || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=200&q=80"
     };
 
@@ -406,13 +548,25 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
       productData.batches = productToEdit.batches || [];
       productData.quantity = productToEdit.quantity || 0;
       updateProduct(productToEdit.id, productData);
+      onClose();
     } else {
       productData.batches = [];
       productData.quantity = 0;
-      addProduct(productData);
+      addProduct(productData).then(async (createdProduct) => {
+        if (createdProduct && initialStock > 0 && initialExpiry) {
+          const expiryISO = new Date(initialExpiry).toISOString();
+          const surplusISO = initialSurplusEnabled && initialSurplusDate
+            ? new Date(initialSurplusDate).toISOString()
+            : undefined;
+          try {
+            await addBatch(createdProduct.id, initialStock, initialStock, expiryISO, surplusISO);
+          } catch (err) {
+            console.error("Failed to create initial stock batch:", err);
+          }
+        }
+      });
+      onClose();
     }
-    
-    onClose();
   };
 
   return (
@@ -436,7 +590,11 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
               <div className="w-full md:w-1/3 space-y-4">
                 <Label>{t.imgLabel}</Label>
                 <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center h-48 bg-slate-50 relative overflow-hidden">
-                  {formData.imageUrl ? (
+                  {isUploading ? (
+                    <div className="text-center text-xs font-bold text-indigo-600 animate-pulse">
+                      Uploading...
+                    </div>
+                  ) : formData.imageUrl ? (
                     <img src={formData.imageUrl} alt="Preview" className="absolute inset-0 w-full h-full object-cover" />
                   ) : (
                     <div className="text-center">
@@ -446,7 +604,7 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
                       <p className="mt-1 text-xs text-gray-500">{t.uploadPlaceholder}</p>
                     </div>
                   )}
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                  <input type="file" accept="image/*" onChange={handleImageUpload} disabled={isUploading} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
                 </div>
 
                 <div className="space-y-2">
@@ -503,6 +661,201 @@ export function AddProductModal({ isOpen, onClose, productToEdit }: AddProductMo
                     <Label htmlFor="surplusPrice">{t.surpPriceLabel}</Label>
                     <Input id="surplusPrice" name="surplusPrice" type="number" min={0} value={formData.surplusPrice} onChange={handleChange} required className="rounded-xl border-slate-200" />
                   </div>
+                </div>
+
+                {!productToEdit && (
+                  <div className="border border-indigo-100 rounded-xl p-4 bg-indigo-50/10 space-y-4">
+                    <h4 className="font-bold text-slate-800 text-xs tracking-wider uppercase">
+                      {lang === "en" ? "Initial Stock Batch (Optional)" : "Batch Stok Awal (Opsional)"}
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="initialStock">{lang === "en" ? "Initial Stock Quantity" : "Jumlah Stok Awal"}</Label>
+                        <Input
+                          id="initialStock"
+                          type="number"
+                          min={0}
+                          value={initialStock}
+                          onChange={(e) => setInitialStock(Math.max(0, Number(e.target.value)))}
+                          className="rounded-xl border-slate-200 focus-visible:ring-resurva-dark"
+                          placeholder="0"
+                        />
+                      </div>
+                      {initialStock > 0 && (
+                        <div className="space-y-2">
+                          <Label htmlFor="initialExpiry">{lang === "en" ? "Expiry Date & Time" : "Tanggal & Jam Kedaluwarsa"}</Label>
+                          <Input
+                            id="initialExpiry"
+                            type="datetime-local"
+                            value={initialExpiry}
+                            onChange={(e) => handleInitialExpiryChange(e.target.value)}
+                            className="rounded-xl border-slate-200 focus-visible:ring-resurva-dark"
+                            required
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {initialStock > 0 && (
+                      <div className="space-y-3 pt-1">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="initialSurplusEnabled"
+                            checked={initialSurplusEnabled}
+                            onCheckedChange={(checked) => {
+                              setInitialSurplusEnabled(checked);
+                              if (checked && initialExpiry && triggerHours) {
+                                const expiryTime = new Date(initialExpiry).getTime();
+                                const totalTrigHours = (triggerYears * 365 * 24) + (triggerMonths * 30 * 24) + (triggerDays * 24) + triggerHours;
+                                const surplusTime = new Date(expiryTime - totalTrigHours * 60 * 60 * 1000);
+                                const s_yyyy = surplusTime.getFullYear();
+                                const s_mm = String(surplusTime.getMonth() + 1).padStart(2, "0");
+                                const s_dd = String(surplusTime.getDate()).padStart(2, "0");
+                                const s_hh = String(surplusTime.getHours()).padStart(2, "0");
+                                const s_min = String(surplusTime.getMinutes()).padStart(2, "0");
+                                setInitialSurplusDate(`${s_yyyy}-${s_mm}-${s_dd}T${s_hh}:${s_min}`);
+                              } else {
+                                setInitialSurplusDate("");
+                              }
+                            }}
+                          />
+                          <Label htmlFor="initialSurplusEnabled" className="text-xs font-semibold text-slate-700 cursor-pointer">
+                            {lang === "en" ? "Set custom surplus start date" : "Atur tanggal mulai surplus custom"}
+                          </Label>
+                        </div>
+                        {initialSurplusEnabled && (
+                          <div className="space-y-2 pl-3 border-l-2 border-indigo-400">
+                            <Label htmlFor="initialSurplusDate" className="flex items-center gap-1 text-xs">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" /> {lang === "en" ? "Surplus Start Date & Time" : "Tanggal & Jam Mulai Surplus"}
+                            </Label>
+                            <Input
+                              id="initialSurplusDate"
+                              type="datetime-local"
+                              value={initialSurplusDate}
+                              onChange={(e) => setInitialSurplusDate(e.target.value)}
+                              className="rounded-xl border-slate-200 text-sm focus-visible:ring-resurva-dark"
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="space-y-3 pt-2">
+                  <Label className="text-sm font-semibold">{t.estimatedExpiryLabel}</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={expiryYears}
+                        onChange={(e) => setExpiryYears(Math.max(0, Number(e.target.value)))}
+                        className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                        placeholder="0"
+                      />
+                      <span className="text-[10px] text-slate-500 block text-center mt-1">{t.years}</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={expiryMonths}
+                        onChange={(e) => setExpiryMonths(Math.max(0, Number(e.target.value)))}
+                        className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                        placeholder="0"
+                      />
+                      <span className="text-[10px] text-slate-500 block text-center mt-1">{t.months}</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={expiryDays}
+                        onChange={(e) => setExpiryDays(Math.max(0, Number(e.target.value)))}
+                        className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                        placeholder="0"
+                      />
+                      <span className="text-[10px] text-slate-500 block text-center mt-1">{t.days}</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={expiryHours}
+                        onChange={(e) => setExpiryHours(Math.max(0, Number(e.target.value)))}
+                        className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                        placeholder="0"
+                      />
+                      <span className="text-[10px] text-slate-500 block text-center mt-1">{t.hours}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  <div className="flex items-center justify-between border rounded-xl p-3 bg-yellow-50/20">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-semibold">{t.autoSurplusLabel}</Label>
+                      <p className="text-[10px] text-slate-500">{t.autoSurplusDesc}</p>
+                    </div>
+                    <Switch
+                      checked={formData.autoSurplusEnabled || false}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, autoSurplusEnabled: checked }))}
+                    />
+                  </div>
+
+                  {formData.autoSurplusEnabled && (
+                    <div className="space-y-2 pl-3 border-l-2 border-yellow-300 transition-all">
+                      <Label className="text-xs text-slate-600 font-medium">{t.surplusTriggerLabel}</Label>
+                      <div className="grid grid-cols-4 gap-2">
+                        <div>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={triggerYears}
+                            onChange={(e) => setTriggerYears(Math.max(0, Number(e.target.value)))}
+                            className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-slate-500 block text-center mt-1">{t.years}</span>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={triggerMonths}
+                            onChange={(e) => setTriggerMonths(Math.max(0, Number(e.target.value)))}
+                            className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-slate-500 block text-center mt-1">{t.months}</span>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={triggerDays}
+                            onChange={(e) => setTriggerDays(Math.max(0, Number(e.target.value)))}
+                            className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-slate-500 block text-center mt-1">{t.days}</span>
+                        </div>
+                        <div>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={triggerHours}
+                            onChange={(e) => setTriggerHours(Math.max(0, Number(e.target.value)))}
+                            className="rounded-xl border-slate-200 h-9 text-xs text-center"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-slate-500 block text-center mt-1">{t.hours}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Carbon Ingredients Composition */}

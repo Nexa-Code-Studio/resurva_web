@@ -1,0 +1,146 @@
+/**
+ * Central API client for resurva backend.
+ * Base URL: http://localhost:8000/api/v1
+ *
+ * Usage:
+ *   import { apiClient } from "@/lib/api";
+ *   const products = await apiClient.get("/products?store_id=...");
+ */
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
+
+// ─── Token helpers ────────────────────────────────────────────────────────────
+
+export function getAccessToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("access_token");
+}
+
+export function setTokens(accessToken: string, refreshToken: string): void {
+  localStorage.setItem("access_token", accessToken);
+  localStorage.setItem("refresh_token", refreshToken);
+}
+
+export function clearTokens(): void {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("auth_user");
+  localStorage.removeItem("auth_store_id");
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  business_id: string | null;
+  store_id: string | null;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: AuthUser;
+}
+
+// ─── Core fetcher ─────────────────────────────────────────────────────────────
+
+async function request<T>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const token = getAccessToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers as Record<string, string>),
+  };
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(`${BASE_URL}${path}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorDetail = `HTTP ${response.status}`;
+    try {
+      const body = await response.json();
+      errorDetail = body.detail ?? errorDetail;
+    } catch {
+      // ignore JSON parse errors for error responses
+    }
+    throw new Error(errorDetail);
+  }
+
+  // 204 No Content – return null cast to T
+  if (response.status === 204) {
+    return null as unknown as T;
+  }
+
+  return response.json() as Promise<T>;
+}
+
+// ─── Public API client ────────────────────────────────────────────────────────
+
+export const apiClient = {
+  get: <T>(path: string) => request<T>(path),
+  post: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: "POST", body: JSON.stringify(body) }),
+  put: <T>(path: string, body: unknown) =>
+    request<T>(path, { method: "PUT", body: JSON.stringify(body) }),
+  delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  uploadFile: async (path: string, file: File): Promise<{ access_url: string }> => {
+    const token = getAccessToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    const response = await fetch(`${BASE_URL}${path}`, {
+      method: "POST",
+      headers,
+      body: formData,
+    });
+    if (!response.ok) {
+      throw new Error(`Upload failed: ${response.statusText}`);
+    }
+    return response.json();
+  },
+};
+
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
+export async function loginWithCredentials(
+  usernameOrEmail: string,
+  password: string
+): Promise<LoginResponse> {
+  const data = await apiClient.post<LoginResponse>("/auth/login", {
+    username_or_email: usernameOrEmail,
+    password,
+  });
+  setTokens(data.access_token, data.refresh_token);
+  localStorage.setItem("auth_user", JSON.stringify(data.user));
+  if (data.user.store_id) {
+    localStorage.setItem("auth_store_id", data.user.store_id);
+  }
+  return data;
+}
+
+export function getStoredUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem("auth_user");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
