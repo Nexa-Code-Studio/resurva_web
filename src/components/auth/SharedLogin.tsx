@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,6 +217,17 @@ export function SharedLogin({
 
       <div className="z-10 w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+             <div className="relative w-16 h-16 transition-transform hover:scale-105">
+               <Image
+                 src="/assets/Logo-hijau.svg"
+                 alt="Resurva Logo"
+                 fill
+                 sizes="64px"
+                 className="object-contain"
+               />
+             </div>
+          </div>
           <h1 className="text-5xl font-extrabold tracking-tight text-resurva-dark flex flex-col items-center gap-1">
             <span>RESURVA</span>
             <span className="text-3xl font-extrabold text-resurva-gold tracking-normal uppercase">

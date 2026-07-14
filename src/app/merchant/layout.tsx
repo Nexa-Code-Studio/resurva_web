@@ -44,6 +44,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
     "/merchant/analytics": "Store Analytics",
     "/merchant/inventory": "Inventory Management",
     "/merchant/orders": "Orders & Logistics",
+    "/merchant/ai-chat": "AI Chat",
     "/merchant/profile": "Store Profile",
   } : {
     "/merchant": "Dasbor",
@@ -51,6 +52,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
     "/merchant/analytics": "Analitik Toko",
     "/merchant/inventory": "Manajemen Inventaris",
     "/merchant/orders": "Pesanan & Logistik",
+    "/merchant/ai-chat": "AI Chat",
     "/merchant/profile": "Profil Toko",
   };
 
@@ -80,6 +82,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
       href: "/merchant/orders",
       badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
     },
+    { name: "AI Chat", href: "/merchant/ai-chat" },
     { name: "Store Profile", href: "/merchant/profile" },
   ] : [
     { name: "Dasbor", href: "/merchant" },
@@ -91,6 +94,7 @@ function MerchantLayoutContent({ children }: { children: React.ReactNode }) {
       href: "/merchant/orders",
       badge: newOrdersCount > 0 ? newOrdersCount.toString() : undefined
     },
+    { name: "AI Chat", href: "/merchant/ai-chat" },
     { name: "Profil Toko", href: "/merchant/profile" },
   ];
 

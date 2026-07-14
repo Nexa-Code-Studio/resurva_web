@@ -178,64 +178,76 @@ export default function MerchantDashboard() {
   });
 
   return (
-    <div className="space-y-8 p-4 md:p-8">
+    <div className="space-y-8 p-4 md:p-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Dashboard Merchant</h1>
+          <p className="text-slate-500 mt-1">Pantau pesanan baru, kapasitas produk, dan wawasan harian toko Anda.</p>
+        </div>
+      </div>
+
+      {/* Overview Cards with Premium Background Icons */}
       {/* Overview Cards with Premium Background Icons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-slate-50 border-slate-200/60 shadow-sm">
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-slate-50 to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-500">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Package className="w-4 h-4 text-slate-500" />
               {t.totalProducts}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-slate-800">{products.length}</div>
-            <div className="absolute bottom-2 right-2 text-slate-300/40 pointer-events-none">
-              <Package className="w-16 h-16 transform rotate-12" />
-            </div>
+            <div className="text-3xl font-black text-slate-900">{products.length}</div>
+            <p className="text-xs text-slate-500 mt-1 font-semibold flex items-center gap-1">
+              Kapasitas Tersedia
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-blue-50/30 border-slate-200/60 shadow-sm">
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-blue-50/50 to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-500">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4 text-blue-500" />
               {t.activeOrders}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-blue-600">{newOrdersToday.length}</div>
-            <div className="absolute bottom-2 right-2 text-blue-200/30 pointer-events-none">
-              <ShoppingBag className="w-16 h-16 transform -rotate-12" />
-            </div>
+            <div className="text-3xl font-black text-slate-900">{newOrdersToday.length}</div>
+            <p className="text-xs text-blue-600 mt-1 font-semibold flex items-center gap-1">
+              Butuh konfirmasi
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-gradient-to-br from-white to-green-50/30 border-slate-200/60 shadow-sm">
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-emerald-50/50 to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-slate-500">
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Banknote className="w-4 h-4 text-emerald-500" />
               {t.todayRevenue}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-extrabold text-green-600">
+            <div className="text-2xl font-black text-slate-900">
               Rp {orders.reduce((acc, order) => acc + order.totalAmount, 0).toLocaleString("id-ID")}
             </div>
-            <div className="absolute bottom-2 right-2 text-green-200/30 pointer-events-none">
-              <Banknote className="w-16 h-16" />
-            </div>
+            <p className="text-xs text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+              Pendapatan harian
+            </p>
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden bg-gradient-to-br from-emerald-50/40 to-emerald-100/50 border-emerald-200/40 shadow-sm">
+        <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-emerald-50/40 to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold text-emerald-800 flex items-center gap-2">
-              <Leaf className="w-4 h-4 text-emerald-600" /> {t.emissionsSaved}
+            <CardTitle className="text-sm font-medium text-slate-500 flex items-center gap-2">
+              <Leaf className="w-4 h-4 text-emerald-600" /> 
+              {t.emissionsSaved}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-extrabold text-emerald-950">{carbonSaved} <span className="text-sm font-semibold text-emerald-700/80">kg CO₂e</span></div>
-            <div className="absolute bottom-2 right-2 text-emerald-300/40 pointer-events-none">
-              <Leaf className="w-16 h-16 transform rotate-45" />
-            </div>
+            <div className="text-3xl font-black text-slate-900">{carbonSaved} <span className="text-sm font-semibold text-emerald-700/80">kg CO₂e</span></div>
+            <p className="text-xs text-emerald-600 mt-1 font-semibold flex items-center gap-1">
+              Dampak positif
+            </p>
           </CardContent>
         </Card>
       </div>

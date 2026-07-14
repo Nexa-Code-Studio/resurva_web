@@ -558,7 +558,7 @@ export default function InventoryPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={() => setIsPreviewOpen(true)} variant="outline" className="border-resurva-dark text-resurva-dark hover:bg-resurva-green-muted rounded-xl">
+          <Button onClick={() => setIsPreviewOpen(true)} variant="outline" className="border-slate-350 text-slate-700 hover:bg-slate-50 rounded-xl">
             <Smartphone className="w-4 h-4 mr-2" />
             {t.previewApp}
           </Button>
@@ -585,7 +585,7 @@ export default function InventoryPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
+      <div className="flex p-1 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-x-auto no-scrollbar w-max mb-6">
         {[
           { key: "Surplus", label: t.tabSurplus, icon: Layers },
           { key: "Products", label: t.tabProducts, icon: Archive },
@@ -596,10 +596,11 @@ export default function InventoryPage() {
             <button
               key={tab.key}
               onClick={() => handleTabChange(tab.key as "Surplus" | "Products" | "History")}
-              className={`px-6 py-3 font-semibold text-sm flex items-center gap-2 border-b-2 transition-colors cursor-pointer ${activeTab === tab.key
-                ? "border-resurva-dark text-resurva-dark"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-                }`}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === tab.key 
+                  ? "bg-resurva-dark text-white shadow-md" 
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+              }`}
             >
               <Icon className="w-4 h-4" />
               {tab.label}

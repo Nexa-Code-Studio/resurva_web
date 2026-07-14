@@ -10,7 +10,7 @@ export default function LoginSuperadmin() {
       cardDesc="Akses terbatas hanya untuk administrator pusat."
       idLabel="Admin ID"
       idPlaceholder="SA-0001"
-      redirectUrl="/superadmin/partners"
+      redirectUrl="/superadmin"
     />
   );
 }
