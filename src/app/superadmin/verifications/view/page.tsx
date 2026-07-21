@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { ArrowLeft, FileText, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function DocumentPreviewPage() {
+function DocumentPreviewContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -134,5 +134,18 @@ export default function DocumentPreviewPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function DocumentPreviewPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-resurva-dark" />
+        <span className="font-semibold text-sm mt-3 text-slate-500">Memuat pratinjau...</span>
+      </div>
+    }>
+      <DocumentPreviewContent />
+    </React.Suspense>
   );
 }
