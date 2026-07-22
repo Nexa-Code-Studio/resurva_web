@@ -134,6 +134,8 @@ export default function MerchantProfilePage() {
   
   const [openTime, setOpenTime] = useState("08:00");
   const [closeTime, setCloseTime] = useState("20:00");
+  const [surplusOpenTime, setSurplusOpenTime] = useState("19:30");
+  const [surplusCloseTime, setSurplusCloseTime] = useState("21:00");
   const [isOpenForOrders, setIsOpenForOrders] = useState(true);
 
   // File Upload states
@@ -285,11 +287,21 @@ export default function MerchantProfilePage() {
         const parts = (storeData.name || "").split(" - ");
         setBranchLocation(parts[1] || "Main Outlet");
 
-        if (storeData.pickup_time) {
-          const match = storeData.pickup_time.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+        // Parse operating_hours for daily schedule (fallback to pickup_time for backward compat)
+        const dailySource = storeData.operating_hours || storeData.pickup_time;
+        if (dailySource) {
+          const match = dailySource.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
           if (match) {
             setOpenTime(match[1]);
             setCloseTime(match[2]);
+          }
+        }
+        // Parse pickup_time for surplus pickup window
+        if (storeData.pickup_time) {
+          const surplusMatch = storeData.pickup_time.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+          if (surplusMatch) {
+            setSurplusOpenTime(surplusMatch[1]);
+            setSurplusCloseTime(surplusMatch[2]);
           }
         }
       }
@@ -435,7 +447,8 @@ export default function MerchantProfilePage() {
     setLoading(true);
     try {
       await apiClient.put(`/stores/${storeId}`, {
-        pickup_time: `${openTime} - ${closeTime} WIB`,
+        operating_hours: `${openTime} - ${closeTime} WIB`,
+        pickup_time: `${surplusOpenTime} - ${surplusCloseTime} WIB`,
         is_active: isOpenForOrders,
       });
 
@@ -795,6 +808,40 @@ export default function MerchantProfilePage() {
                 </div>
               </div>
             </section>
+
+            <section className="space-y-4 mt-6 pt-6 border-t border-dashed border-slate-200">
+              <div>
+                <h4 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 text-amber-600">
+                    <Clock className="w-4 h-4" />
+                  </span>
+                  Jam Pengambilan Paket Surplus
+                </h4>
+                <p className="text-xs text-slate-500 mt-1">Atur jadwal waktu pelanggan bisa mengambil paket makanan surplus. Berbeda dengan jam operasional toko.</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="surplusOpenTime">Waktu Mulai</Label>
+                  <Input 
+                    id="surplusOpenTime" 
+                    type="time" 
+                    value={surplusOpenTime} 
+                    onChange={(e) => setSurplusOpenTime(e.target.value)} 
+                    className="rounded-xl border-slate-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="surplusCloseTime">Waktu Selesai</Label>
+                  <Input 
+                    id="surplusCloseTime" 
+                    type="time" 
+                    value={surplusCloseTime} 
+                    onChange={(e) => setSurplusCloseTime(e.target.value)} 
+                    className="rounded-xl border-slate-200"
+                  />
+                </div>
+              </div>
+            </section>
           </div>
           <div className="flex justify-end gap-3 p-6 border-t border-slate-100 bg-slate-50 rounded-b-xl">
             <Button type="button" variant="outline" onClick={() => setEditingOperations(false)}>{t.cancelBtn}</Button>
@@ -987,6 +1034,13 @@ export default function MerchantProfilePage() {
                     <div>
                       <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Jadwal Buka Harian</p>
                       <p className="text-sm font-medium text-slate-900">{openTime} WIB - {closeTime} WIB</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-4 mt-3">
+                    <div className="p-2.5 bg-amber-50 rounded-xl shrink-0 opacity-0 hidden md:block"><Clock className="w-4 h-4 text-amber-600" /></div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Jam Pengambilan Paket Surplus</p>
+                      <p className="text-sm font-medium text-slate-900">{surplusOpenTime} WIB - {surplusCloseTime} WIB</p>
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { useMerchantContext, Order, OrderStatus, OrderType, mapBackendOrder, BackendOrder, PaginatedResponse } from "@/lib/contexts/MerchantContext";
 import { apiClient } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -135,6 +135,12 @@ export default function OrdersPage() {
     Selesai: { items: [] as Order[], page: 1, hasMore: true, loading: false, total: 0 }
   });
 
+  const tabStatusRef = useRef({
+    Baru: { loading: false, page: 1, hasMore: true },
+    Berlangsung: { loading: false, page: 1, hasMore: true },
+    Selesai: { loading: false, page: 1, hasMore: true }
+  });
+
 
 
   const t = TRANSLATIONS[lang];
@@ -207,21 +213,23 @@ export default function OrdersPage() {
   const loadNextPage = useCallback(async (tab: "Baru" | "Berlangsung" | "Selesai", isInitial = false) => {
     if (!storeId) return;
 
-    // Check loading or end of data
-    let current = tabData[tab];
-    if (!isInitial && (current.loading || !current.hasMore)) return;
+    const status = tabStatusRef.current[tab];
+    if (!isInitial && (status.loading || !status.hasMore)) return;
+
+    // Set loading state synchronously to prevent duplicate calls
+    status.loading = true;
 
     setTabData(prev => ({
       ...prev,
       [tab]: { ...prev[tab], loading: true }
     }));
 
-    const pageToLoad = isInitial ? 1 : tabData[tab].page + 1;
+    const pageToLoad = isInitial ? 1 : status.page + 1;
     const pageSize = 12;
 
     let statusQuery = "";
-    if (tab === "Baru") statusQuery = "pending";
-    else if (tab === "Berlangsung") statusQuery = "paid,prepared";
+    if (tab === "Baru") statusQuery = "pending,paid";
+    else if (tab === "Berlangsung") statusQuery = "confirmed,prepared";
     else if (tab === "Selesai") statusQuery = "completed,cancelled";
 
     try {
@@ -229,6 +237,12 @@ export default function OrdersPage() {
       const response = await apiClient.get<PaginatedResponse<BackendOrder>>(url);
       const mapped = response.items.map((bo: BackendOrder) => mapBackendOrder(bo));
       const totalCount = response.pagination ? response.pagination.total : mapped.length;
+      const hasMore = mapped.length === pageSize;
+
+      // Update ref state synchronously
+      status.page = pageToLoad;
+      status.hasMore = hasMore;
+      status.loading = false;
 
       setTabData(prev => {
         const curr = prev[tab];
@@ -237,7 +251,6 @@ export default function OrdersPage() {
         const uniqueItems = newItems.filter((item: Order, index: number, self: Order[]) =>
           self.findIndex((o: Order) => o.id === item.id) === index
         );
-        const hasMore = mapped.length === pageSize;
         return {
           ...prev,
           [tab]: {
@@ -251,16 +264,22 @@ export default function OrdersPage() {
       });
     } catch (err) {
       console.error("[OrdersPage] loadNextPage failed:", err);
+      status.loading = false;
       setTabData(prev => ({
         ...prev,
         [tab]: { ...prev[tab], loading: false }
       }));
     }
-  }, [storeId, tabData]);
+  }, [storeId]);
 
   // Sync / Reset on store changes
   useEffect(() => {
     if (storeId) {
+      tabStatusRef.current = {
+        Baru: { loading: false, page: 1, hasMore: true },
+        Berlangsung: { loading: false, page: 1, hasMore: true },
+        Selesai: { loading: false, page: 1, hasMore: true }
+      };
       setTabData({
         Baru: { items: [], page: 1, hasMore: true, loading: false, total: 0 },
         Berlangsung: { items: [], page: 1, hasMore: true, loading: false, total: 0 },
@@ -272,11 +291,12 @@ export default function OrdersPage() {
         loadNextPage("Selesai", true);
       }
     }
-  }, [storeId]);
+  }, [storeId, activeTab, loadNextPage]);
 
   // Sync tab page on tab switch
   useEffect(() => {
-    if (storeId && tabData[activeTab].items.length === 0 && tabData[activeTab].hasMore && !tabData[activeTab].loading) {
+    const current = tabStatusRef.current[activeTab];
+    if (storeId && tabData[activeTab].items.length === 0 && current.hasMore && !current.loading) {
       loadNextPage(activeTab, true);
     }
   }, [activeTab, storeId, loadNextPage, tabData]);
@@ -284,7 +304,7 @@ export default function OrdersPage() {
   // Global scroll listener for window scroll to trigger page loads
   useEffect(() => {
     const handleScroll = () => {
-      const current = tabData[activeTab];
+      const current = tabStatusRef.current[activeTab];
       if (current.loading || !current.hasMore) return;
 
       const threshold = 150;
@@ -298,7 +318,7 @@ export default function OrdersPage() {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [activeTab, tabData, loadNextPage]);
+  }, [activeTab, loadNextPage]);
 
   const filteredOrders = useMemo(() => {
     const currentItems = tabData[activeTab].items;

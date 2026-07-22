@@ -335,8 +335,9 @@ export interface BackendOrder {
 export function mapBackendOrderStatus(status: string): OrderStatus {
   switch (status) {
     case "pending":
-      return "Menunggu Konfirmasi";
     case "paid":
+      return "Menunggu Konfirmasi";
+    case "confirmed":
       return "Disiapkan";
     case "prepared":
       return "Siap Diambil";
@@ -352,9 +353,9 @@ export function mapBackendOrderStatus(status: string): OrderStatus {
 function unmapFrontendOrderStatus(status: OrderStatus): string {
   switch (status) {
     case "Menunggu Konfirmasi":
-      return "pending";
-    case "Disiapkan":
       return "paid";
+    case "Disiapkan":
+      return "confirmed";
     case "Siap Diambil":
       return "prepared";
     case "Selesai":
@@ -362,7 +363,7 @@ function unmapFrontendOrderStatus(status: OrderStatus): string {
     case "Dibatalkan":
       return "cancelled";
     default:
-      return "pending";
+      return "paid";
   }
 }
 

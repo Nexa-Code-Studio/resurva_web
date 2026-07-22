@@ -435,7 +435,7 @@ export default function InventoryPage() {
   const handleOpenEditBatch = (product: Product, batch: ProductBatch) => {
     setEditingBatchProduct(product);
     setEditingBatch(batch);
-    setEditingBatchQty(batch.qty);
+    setEditingBatchQty(batch.remainingQty);
     if (batch.expiryDate) {
       const date = new Date(batch.expiryDate);
       const yyyy = date.getFullYear();
@@ -624,7 +624,7 @@ export default function InventoryPage() {
                   displayedSurplusProducts.map((product) => {
                     const activeBatches = product.batches?.filter(b => !b.expiryDate || new Date(b.expiryDate).getTime() > nowTime) || [];
                     const surplusBatches = activeBatches.filter(b => isBatchSurplus(product, b));
-                    const totalSurplusQty = surplusBatches.reduce((sum, b) => sum + b.qty, 0);
+                    const totalSurplusQty = surplusBatches.reduce((sum, b) => sum + b.remainingQty, 0);
                     const isLowStock = product.minStock !== undefined && totalSurplusQty <= product.minStock;
                     const isExpanded = expandedProducts.has(product.id);
 
@@ -786,7 +786,7 @@ export default function InventoryPage() {
                                                   {batchTag}
                                                 </span>
                                                 <span className="text-xs font-bold text-slate-500 shrink-0">
-                                                  {batch.qty} {t.pcs}
+                                                  {batch.remainingQty} {t.pcs}
                                                 </span>
                                               </div>
                                               
@@ -961,7 +961,7 @@ export default function InventoryPage() {
                 ) : (
                   filteredProducts.map((product) => {
                     const activeBatches = product.batches?.filter(b => !b.expiryDate || new Date(b.expiryDate).getTime() > nowTime) || [];
-                    const activeQty = activeBatches.reduce((sum, b) => sum + b.qty, 0);
+                    const activeQty = activeBatches.reduce((sum, b) => sum + b.remainingQty, 0);
                     const isLowStock = product.minStock !== undefined && activeQty <= product.minStock;
                     const isExpanded = expandedProducts.has(product.id);
 
@@ -1127,7 +1127,7 @@ export default function InventoryPage() {
                                                   {batchTag}
                                                 </span>
                                                 <span className="text-xs font-bold text-slate-500 shrink-0">
-                                                  {batch.qty} {t.pcs}
+                                                  {batch.remainingQty} {t.pcs}
                                                 </span>
                                               </div>
                                               

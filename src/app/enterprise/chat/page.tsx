@@ -2,9 +2,36 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Bot, User, MessageSquare, Plus, Wrench, ChevronDown, ChevronUp, Loader2, Sparkles, TrendingUp, Leaf, Trophy } from "lucide-react";
+import { Send, Bot, User, MessageSquare, Plus, Wrench, ChevronDown, ChevronUp, Loader2, Sparkles, TrendingUp, Leaf, Trophy, Brain, BarChart3 } from "lucide-react";
 import { apiClient } from "@/lib/api";
 import { marked } from "marked";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title as ChartTitle,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  ChartTitle,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface ChatMessage {
   id: string;
@@ -20,6 +47,7 @@ interface ChatSession {
   created_at: string;
   updated_at: string;
   business_id?: string | null;
+  active_skill?: string | null;
 }
 
 // Custom function to parse message markdown and post-process mermaid code blocks
@@ -136,6 +164,95 @@ function ThinkingDropdown({ thinkingMsgs }: { thinkingMsgs: ChatMessage[] }) {
   );
 }
 
+function ChatChart({ configStr }: { configStr: string }) {
+  const chartData = useMemo(() => {
+    try {
+      return JSON.parse(configStr);
+    } catch (e) {
+      console.error("Failed to parse chart JSON:", e);
+      return null;
+    }
+  }, [configStr]);
+
+  if (!chartData) {
+    return (
+      <div className="p-4 rounded-xl border border-red-200 bg-red-50 text-red-700 text-xs">
+        Format data grafik tidak valid.
+        <pre className="mt-2 p-2 bg-slate-900 text-slate-100 rounded text-[10px] overflow-x-auto whitespace-pre">{configStr}</pre>
+      </div>
+    );
+  }
+
+  const { type, data, options } = chartData;
+
+  const defaultOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+    },
+    ...options
+  };
+
+  return (
+    <div className="w-full h-64 my-4 p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-col justify-center">
+      {type === "bar" && <Bar data={data} options={defaultOptions} />}
+      {type === "line" && <Line data={data} options={defaultOptions} />}
+      {type === "doughnut" && <Doughnut data={data} options={defaultOptions} />}
+      {type !== "bar" && type !== "line" && type !== "doughnut" && (
+        <div className="text-xs text-slate-500 text-center">Tipe grafik "{type}" tidak didukung.</div>
+      )}
+    </div>
+  );
+}
+
+const MessageContent = ({ content }: { content: string }) => {
+  const parts = useMemo(() => {
+    if (!content) return [];
+    
+    const res: Array<{ type: "text" | "chart"; value: string }> = [];
+    const regex = /```chart\s*([\s\S]*?)```/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      const textBefore = content.substring(lastIndex, match.index);
+      if (textBefore.trim()) {
+        res.push({ type: "text", value: textBefore });
+      }
+      res.push({ type: "chart", value: match[1].trim() });
+      lastIndex = regex.lastIndex;
+    }
+    
+    const textAfter = content.substring(lastIndex);
+    if (textAfter.trim() || res.length === 0) {
+      res.push({ type: "text", value: textAfter });
+    }
+    
+    return res;
+  }, [content]);
+
+  return (
+    <div className="space-y-2">
+      {parts.map((part, idx) => {
+        if (part.type === "chart") {
+          return <ChatChart key={idx} configStr={part.value} />;
+        }
+        return (
+          <div
+            key={idx}
+            className="markdown-content text-[15px] leading-relaxed animate-in fade-in"
+            dangerouslySetInnerHTML={{ __html: parseMessageContent(part.value) }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
+
 export default function EnterpriseChatPage() {
   const [conversations, setConversations] = useState<ChatSession[]>([]);
   const [loadingConversations, setLoadingConversations] = useState(true);
@@ -145,6 +262,106 @@ export default function EnterpriseChatPage() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
   const [input, setInput] = useState("");
+  const [showSkillPopover, setShowSkillPopover] = useState(false);
+  const [activeSkillForNewChat, setActiveSkillForNewChat] = useState<string | null>(null);
+
+  // Skills and commands suggestions state
+  const SKILLS = useMemo(() => [
+    { id: "umum", name: "Umum", icon: "💬", desc: "Tanya jawab biasa" },
+    { id: "strategi", name: "Strategi", icon: "🧠", desc: "Rekomendasi taktis & search" },
+    { id: "visualisasi", name: "Visualisasi", icon: "📊", desc: "Tampilkan data sebagai grafik" },
+  ], []);
+
+  const [selectedCommandIndex, setSelectedCommandIndex] = useState(0);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const filteredCommands = useMemo(() => {
+    if (!input.startsWith("/")) return [];
+    const suggestionsFilter = input.slice(1).toLowerCase();
+    return [
+      { command: "/strategi", name: "Strategi 🧠", desc: "Analisis strategi bisnis & crawler web" },
+      { command: "/visual", name: "Visualisasi 📊", desc: "Buat grafik dengan data live" },
+      { command: "/umum", name: "Umum 💬", desc: "Reset ke mode tanya jawab biasa" }
+    ].filter(cmd => cmd.command.slice(1).startsWith(suggestionsFilter));
+  }, [input]);
+
+  useEffect(() => {
+    if (input.startsWith("/") && !input.includes(" ")) {
+      setShowSuggestions(true);
+      setSelectedCommandIndex(0);
+    } else {
+      setShowSuggestions(false);
+    }
+  }, [input]);
+
+  const getActiveSkill = () => {
+    if (activeConversationId) {
+      const activeConv = conversations.find(c => c.id === activeConversationId);
+      return activeConv?.active_skill || null;
+    }
+    return activeSkillForNewChat;
+  };
+
+  const handleSkillChange = async (skillId: string) => {
+    if (!activeConversationId) return;
+
+    // Optimistic UI update
+    setConversations(prev => prev.map(c => {
+      if (c.id === activeConversationId) {
+        return { ...c, active_skill: skillId === "umum" ? null : skillId };
+      }
+      return c;
+    }));
+
+    try {
+      await apiClient.patch(`/chat/conversations/${activeConversationId}`, {
+        active_skill: skillId
+      });
+
+      const skillName = SKILLS.find(s => s.id === skillId)?.name || "Umum";
+      const skillIcon = SKILLS.find(s => s.id === skillId)?.icon || "💬";
+      const systemMessage: ChatMessage = {
+        id: "sys_" + Date.now().toString(),
+        role: "system",
+        content: `🔧 Mode Percakapan diubah ke: **Skill ${skillName}** ${skillIcon}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, systemMessage]);
+    } catch (err) {
+      console.error("Failed to update conversation skill:", err);
+      alert("Gagal mengubah skill percakapan");
+    }
+  };
+
+  const changeActiveSkill = async (skillId: string) => {
+    const targetSkill = skillId === "umum" ? null : skillId;
+    if (activeConversationId) {
+      await handleSkillChange(skillId);
+    } else {
+      setActiveSkillForNewChat(targetSkill);
+      const skillName = SKILLS.find(s => s.id === skillId)?.name || "Umum";
+      const skillIcon = SKILLS.find(s => s.id === skillId)?.icon || "💬";
+      const systemMessage: ChatMessage = {
+        id: "sys_" + Date.now().toString(),
+        role: "system",
+        content: `🔧 Mode Percakapan diubah ke: **Skill ${skillName}** ${skillIcon}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, systemMessage]);
+    }
+  };
+
+  const handleCommandSelect = (command: string) => {
+    setInput("");
+    setShowSuggestions(false);
+    if (command === "/strategi") {
+      changeActiveSkill("strategi");
+    } else if (command === "/visual") {
+      changeActiveSkill("visualisasi");
+    } else if (command === "/umum") {
+      changeActiveSkill("umum");
+    }
+  };
 
   const [mermaidInitialized, setMermaidInitialized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -227,7 +444,6 @@ export default function EnterpriseChatPage() {
       try {
         const rawMsgs = await apiClient.get<any[]>(`/chat/conversations/${activeConversationId}/messages`);
         const formatted: ChatMessage[] = (rawMsgs || [])
-          .filter((m: any) => m.role !== "system")
           .map((m: any) => ({
             id: m.id,
             role: m.role,
@@ -268,8 +484,10 @@ export default function EnterpriseChatPage() {
     if (!targetConvId) {
       try {
         const newConv = await apiClient.post<ChatSession>("/chat/conversations", {
-          title: null
+          title: null,
+          active_skill: activeSkillForNewChat
         });
+        setActiveSkillForNewChat(null);
         targetConvId = newConv.id;
         setActiveConversationId(newConv.id);
       } catch (err) {
@@ -296,7 +514,6 @@ export default function EnterpriseChatPage() {
       );
 
       const formatted: ChatMessage[] = (updatedRawMsgs || [])
-        .filter((m: any) => m.role !== "system")
         .map((m: any) => ({
           id: m.id,
           role: m.role,
@@ -335,7 +552,22 @@ export default function EnterpriseChatPage() {
     let currentThinking: ChatMessage[] = [];
 
     messages.forEach((msg) => {
-      if (msg.role === "user") {
+      if (msg.role === "system") {
+        if (currentThinking.length > 0) {
+          blocks.push({
+            id: currentThinking[0].id,
+            role: "assistant",
+            thinkingMsgs: currentThinking,
+          });
+          currentThinking = [];
+        }
+        blocks.push({
+          id: msg.id,
+          role: "system",
+          finalMsg: msg,
+          thinkingMsgs: [],
+        });
+      } else if (msg.role === "user") {
         if (currentThinking.length > 0) {
           blocks.push({
             id: currentThinking[0].id,
@@ -407,15 +639,15 @@ export default function EnterpriseChatPage() {
       
       {/* Sidebar History (Left Pane) */}
       <div className="w-full md:w-72 border-r border-slate-200 bg-slate-50 flex flex-col hidden md:flex shrink-0">
-        <div className="p-4 border-b border-slate-200">
-          <Button 
-            onClick={handleNewChat}
-            className="w-full bg-[#0F3D2E] hover:bg-[#1A5C44] text-white flex items-center gap-2 justify-start h-11 px-4 rounded-xl transition-colors cursor-pointer font-semibold shadow-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Percakapan Baru</span>
-          </Button>
-        </div>
+          <div className="p-4 border-b border-slate-200">
+            <Button 
+              onClick={handleNewChat}
+              className="w-full bg-[#0F3D2E] hover:bg-[#1A5C44] text-white flex items-center gap-2 justify-start h-11 px-4 rounded-xl transition-colors cursor-pointer font-semibold shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Percakapan Baru</span>
+            </Button>
+          </div>
         
         <div className="flex-1 overflow-y-auto p-3 space-y-1">
           {loadingConversations ? (
@@ -499,6 +731,17 @@ export default function EnterpriseChatPage() {
             </div>
           ) : (
             renderMessageBlocks.map((block) => {
+              if (block.role === "system") {
+                const msg = block.finalMsg!;
+                return (
+                  <div key={block.id} className="flex justify-center my-3">
+                    <div className="bg-slate-100/80 text-slate-500 border border-slate-200/50 px-4 py-1.5 rounded-full text-xs font-semibold shadow-sm flex items-center gap-1.5">
+                      <span>{msg.content}</span>
+                    </div>
+                  </div>
+                );
+              }
+
               if (block.role === "user" && block.finalMsg) {
                 return (
                   <div key={block.id} className="flex gap-4 justify-end">
@@ -523,10 +766,7 @@ export default function EnterpriseChatPage() {
                         <Bot className="w-5 h-5 text-[#0F3D2E]" />
                       </div>
                       <div className="max-w-[85%] md:max-w-[75%] bg-slate-50 border border-slate-200/80 text-slate-800 rounded-2xl rounded-tl-sm p-4 md:p-6 shadow-sm">
-                        <div 
-                          className="prose prose-slate max-w-none text-[15px] leading-relaxed markdown-content"
-                          dangerouslySetInnerHTML={{ __html: parseMessageContent(block.finalMsg.content) }}
-                        />
+                        <MessageContent content={block.finalMsg.content} />
 
                         <span className="text-[11px] mt-3 block text-slate-400">
                           {block.finalMsg.timestamp}
@@ -558,22 +798,121 @@ export default function EnterpriseChatPage() {
         </div>
 
         {/* Chat Input */}
-        <div className="p-4 md:p-6 bg-white border-t border-slate-100">
+        <div className="p-4 md:p-6 bg-white border-t border-slate-100 relative">
+          
+          {/* Suggestions Overlay */}
+          {showSuggestions && filteredCommands.length > 0 && (
+            <div className="absolute bottom-[calc(100%-8px)] left-4 right-4 md:left-6 md:right-6 max-w-4xl mx-auto bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 animate-in fade-in slide-in-from-bottom-2 duration-150">
+              <div className="px-4 py-2 bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pilih Command Skill</div>
+              {filteredCommands.map((cmd, idx) => {
+                const isSelected = idx === selectedCommandIndex;
+                return (
+                  <button
+                    key={cmd.command}
+                    type="button"
+                    onClick={() => handleCommandSelect(cmd.command)}
+                    className={`w-full text-left px-4 py-3 flex items-center justify-between transition-colors cursor-pointer ${
+                      isSelected ? "bg-indigo-50/70" : "hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono text-sm font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">{cmd.command}</span>
+                      <span className="text-xs text-slate-500">{cmd.desc}</span>
+                    </div>
+                    <span className="text-xs font-bold text-slate-700">{cmd.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
           <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="max-w-4xl mx-auto relative flex items-end gap-2">
-            <div className="flex-1 relative bg-slate-50 rounded-2xl border border-slate-200 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all overflow-hidden flex items-end min-h-[56px] shadow-sm">
+            
+            <div className="flex-1 relative bg-slate-50 rounded-2xl border border-slate-200 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500 transition-all overflow-hidden flex items-end min-h-[56px] shadow-sm pl-3 pr-5 py-2.5 gap-2">
+              
+              {/* Skill Selector Popover Button (Inside Left of Textarea Container) */}
+              <div className="relative shrink-0 self-end mb-0.5">
+                <button
+                  type="button"
+                  onClick={() => setShowSkillPopover(prev => !prev)}
+                  className="h-9 w-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-100 transition-all flex items-center justify-center cursor-pointer shadow-sm text-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  title="Pilih Skill AI"
+                >
+                  {(() => {
+                    const currentSkill = getActiveSkill();
+                    if (currentSkill === "strategi") return <Brain className="w-4 h-4 text-[#0F3D2E] animate-pulse" />;
+                    if (currentSkill === "visualisasi") return <BarChart3 className="w-4 h-4 text-[#0F3D2E] animate-pulse" />;
+                    return <span className="text-sm font-bold text-slate-400">/</span>;
+                  })()}
+                </button>
+
+                {/* Skill Popover Panel */}
+                {showSkillPopover && (
+                  <div className="absolute bottom-[calc(100%+12px)] left-0 w-64 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 p-2 divide-y divide-slate-150 animate-in fade-in slide-in-from-bottom-2 duration-150">
+                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">Pilih Skill AI</div>
+                    <div className="py-1 space-y-0.5 animate-in fade-in">
+                      {SKILLS.map(sk => {
+                        const isSelected = (getActiveSkill() || "umum") === sk.id;
+                        return (
+                          <button
+                            key={sk.id}
+                            type="button"
+                            onClick={() => {
+                              changeActiveSkill(sk.id);
+                              setShowSkillPopover(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl flex items-center gap-3 transition-colors cursor-pointer ${
+                              isSelected ? "bg-indigo-50 text-indigo-700 font-bold" : "hover:bg-slate-50 text-slate-600"
+                            }`}
+                          >
+                            <span className="text-lg">{sk.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs">{sk.name}</p>
+                              <p className="text-[9px] text-slate-400 truncate">{sk.desc}</p>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => {
+                  if (showSuggestions && filteredCommands.length > 0) {
+                    if (e.key === 'ArrowDown') {
+                      e.preventDefault();
+                      setSelectedCommandIndex(prev => (prev + 1) % filteredCommands.length);
+                      return;
+                    }
+                    if (e.key === 'ArrowUp') {
+                      e.preventDefault();
+                      setSelectedCommandIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+                      return;
+                    }
+                    if (e.key === 'Enter' || e.key === 'Tab') {
+                      e.preventDefault();
+                      handleCommandSelect(filteredCommands[selectedCommandIndex].command);
+                      return;
+                    }
+                    if (e.key === 'Escape') {
+                      e.preventDefault();
+                      setShowSuggestions(false);
+                      return;
+                    }
+                  }
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     handleSend();
                   }
                 }}
                 placeholder="Tanyakan sesuatu ke RESURVA Enterprise AI (misal: analisis omset & reduksi emisi seluruh cabang)..."
-                className="w-full bg-transparent border-0 focus:outline-none resize-none py-4 px-5 text-[15px] max-h-32 text-slate-700 placeholder:text-slate-400"
+                className="w-full bg-transparent border-0 focus:outline-none resize-none py-1.5 px-1 text-[15px] max-h-32 text-slate-700 placeholder:text-slate-400 self-center"
                 rows={1}
-                style={{ minHeight: "56px" }}
+                style={{ minHeight: "36px" }}
               />
             </div>
             <Button 
