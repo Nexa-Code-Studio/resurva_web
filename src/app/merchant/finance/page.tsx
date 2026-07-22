@@ -280,7 +280,7 @@ import { useLanguage } from "@/lib/contexts/LanguageContext";
 export default function FinancePage() {
   const { storeId, orders } = useMerchantContext();
   const { lang } = useLanguage();
-  const [balances, setBalances] = useState({ digital: 0, offline: 0 });
+  const [balances, setBalances] = useState({ digital: 0, offline: 0, escrow: 0 });
 
   const [transactions, setTransactions] = useState<CustomTransaction[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -443,6 +443,7 @@ export default function FinancePage() {
     return {
       digital: balances.digital,
       offline: balances.offline,
+      escrow: balances.escrow || 0,
       total: balances.digital + balances.offline,
       totalIncome,
       totalExpense,
@@ -659,7 +660,7 @@ export default function FinancePage() {
       </div>
 
       {/* Balance Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
         {/* Total Combined Balance */}
         <Card className="border-slate-200/60 shadow-sm bg-gradient-to-br from-slate-900 to-slate-950 text-white relative overflow-hidden flex flex-col justify-between h-full">
           <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 opacity-5 pointer-events-none">
@@ -724,6 +725,30 @@ export default function FinancePage() {
               <div className="text-2xl font-extrabold text-slate-900">{formatIDR(walletBalances.offline)}</div>
               <p className="text-xs text-slate-500 mt-2">
                 {allTransactions.filter(t => t.walletType === "offline").length} {lang === "en" ? "cash records active" : "catatan kas aktif"}
+              </p>
+            </CardContent>
+          </div>
+        </Card>
+
+        {/* Escrow Wallet Card */}
+        <Card className="border-slate-200/60 shadow-sm bg-white hover:shadow-md transition-shadow flex flex-col justify-between h-full">
+          <div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold text-slate-500 flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-amber-500" />
+                  {lang === "en" ? "Temporary Pocket (Escrow)" : "Kantong Sementara (Escrow)"}
+                </span>
+                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 text-[10px]">Held</Badge>
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-400">
+                {lang === "en" ? "Funds held until order completed" : "Dana ditangguhkan hingga pesanan selesai"}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pb-6">
+              <div className="text-2xl font-extrabold text-slate-900">{formatIDR(walletBalances.escrow)}</div>
+              <p className="text-xs text-slate-500 mt-2">
+                {orders.filter(o => ["Menunggu Konfirmasi", "Disiapkan", "Siap Diambil"].includes(o.status)).length} {lang === "en" ? "ongoing orders" : "pesanan berlangsung"}
               </p>
             </CardContent>
           </div>
